@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import tkinter as tk
+import json
+import os
 
 import src.utils.requests as requests
 import src.utils.images as images
@@ -89,9 +91,35 @@ class PackDownloader:
                 # Print that the pack has started downloading
                 print(f"Downloading and unzipping {_pack_url}...")
                 # Use the requests utility to download the pack from the URL, unzip it and put it in the packs/ folder
-                requests.download(_pack_url, "packs/", True)
+                requests.download(_pack_url, "packs/", unzip=True)
                 # Print that the pack has finished downloading and unzipping
                 print(f"Downloaded and unzipped {_pack_url}")
+
+            # Iterate all packs in pack folder
+            for pack in os.listdir("packs/"):
+                # Open pack file in read (R) mode with the file referenced as 'f'
+                with open(f"packs/{pack}", 'r') as f:
+                    # Load JSON as Python object
+                    data = json.load(f)
+                    # Iterate all Pokemon species
+                    for species in data["species"]:
+                        # Parse species name
+                        species_name = species["name"]
+                        # Parse sprite table
+                        sprites = species["sprites"]
+                        regular_sprites = sprites["regular"]
+                        shiny_sprites = sprites["shiny"]
+                        # Download all regular sprites (front & back) to assets
+                        requests.download(regular_sprites["front"], f"assets/{species_name}/regular/front.png")
+                        requests.download(regular_sprites["back"], f"assets/{species_name}/regular/back.png")
+                        # Download all shiny sprites (front & back) to assets
+                        requests.download(shiny_sprites["front"], f"assets/{species_name}/shiny/front.png")
+                        requests.download(shiny_sprites["back"], f"assets/{species_name}/shiny/back.png")
+                        # Inform user that images were downloaded
+                        print(f"Downloaded sprite assets for: {species_name} ({pack})")
+
+            # Inform user that asset download is complete
+            print("Finished downloaded assets")
 
             # Destroy the top level window
             self.window.destroy()

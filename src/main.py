@@ -17,6 +17,10 @@ def main():
     root = tk.Tk()
     # Set the title of the root window
     root.title("Pokemon")
+    # Set size of the root window
+    root.geometry("400x400")
+    # Make root window not resizable
+    root.resizable(False, False)
 
     # Load the main images through the 'load_images' function
     # which is defined later
