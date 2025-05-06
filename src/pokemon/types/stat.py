@@ -1,8 +1,15 @@
-from __future__ import annotations
+# This file defines an enum that represents every stat a Pokemon has.
+# Different stats influence how a Pokemon performs in battle ranging
+# from the order of attacks, health, defense, and outgoing damage.
+
+# Imports
 
 from enum import Enum
 
+# Define 'Stat' enum by creating a class that extends 'Enum'
+
 class Stat(Enum):
+    # Define enumerators using string literal values
     HP = "hp"
     ATTACK = "attack"
     SPECIAL_ATTACK = "special_attack"
@@ -10,9 +17,18 @@ class Stat(Enum):
     SPECIAL_DEFENSE = "special_defense"
     SPEED = "speed"
 
+    # Define a static method to access any enumeration object using a string literal
     @staticmethod
-    def of(text: str) -> Stat:
-        for stat in Stat:
-            if stat.name.lower() == text or stat.value.lower() == text.lower():
-                return stat
-        raise KeyError("Invalid stat: " + text)
+    def of(value: str):
+        # Convert value from kebab-case to snake_case because value may be provided
+        # directly from Pokemon API which uses kebab-case while enumerations are in
+        # snake_case
+        value = value.lower().replace("-", "_")
+        # Iterate all enumerations
+        for entry in Stat:
+            # Check if current enumeration's name or value matches the 'value' argument
+            if entry.name.lower() == value or entry.value.lower() == value:
+                # Return matching enumeration
+                return entry
+        # Raise a KeyError to indicate invalid 'value' argument
+        raise KeyError(f"Invalid stat: {value}")
