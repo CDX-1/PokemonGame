@@ -5,13 +5,22 @@
 
 # Imports
 
-from typing import TypedDict, cast
+from typing import TypedDict, cast, Literal
 
+from src.pokemon.types.battle_condition import BattleCondition, BattleMove
+from src.pokemon.types.capture_data import CaptureData
 from src.pokemon.types.egg_groups import EggGroup
 from src.pokemon.types.evolution import Evolution
+from src.pokemon.types.gender import Gender
 from src.pokemon.types.growth_rate import GrowthRate
 from src.pokemon.types.learnable_move import LearnableMove
+from src.pokemon.types.nature import Nature
+from src.pokemon.types.stat import Stat
 from src.pokemon.types.stat_table import OptionalStatTable, StatTable
+from src.utils import images
+import src.resources as resources
+
+import random
 
 # Define an 'Abilities' dictionary class which separates a Pokemon's regular abilities
 # and its more rare hidden abilities of which a species only has one of
@@ -122,3 +131,136 @@ class Species:
             moves=list(map(lambda entry: cast(LearnableMove, entry), obj["moves"])), # Cast each learnable move sub-dictionary to a LearnableMove
             sprites=cast(SpriteTable, obj["sprites"]) # Cast the sprites sub-dictionary to a SpriteTable
         )
+
+    # Define the 'get_sprite' function that obtains the Tkinter PhotoImage of the respective sprite
+    # Using the sprite type, shiny status, and the image scale
+    def get_sprite(self, sprite_type: Literal["front", "back"], shiny: bool = False, scale: tuple[int, int] = (1, 1)):
+        # Check if Pokemon is shiny
+        if shiny:
+            # Declare sprite_variant as shiny variant
+            sprite_variant = "shiny"
+        else:
+            # Declare sprite_variant as regular variant
+            sprite_variant = "regular"
+        # Return the sprite PhotoImage instance using the images utility with the provided scale
+        return images.get_image(f"{self.name}_{sprite_variant}_{sprite_type}", scale=scale)
+
+    # Define the 'get_known_moves' which returns a list of the moves
+    # this species can learn through level up at this current level
+    def get_known_moves(self, level: int) -> list[str]:
+        # Initialize an empty list of known moves
+        known_moves = []
+        # Iterate this species learnable moves
+        for move in self.moves:
+            # Check if this move can be learnt by level up
+            if move["level"] is not None:
+                # Check if Pokemon's level is high enough
+                if level >= move["level"]:
+                    # Append move name to list of known oves
+                    known_moves.append(move["name"])
+        # Return list of known moves
+        return known_moves
+
+    # Define a method called 'spawn' that creates a fresh
+    # instance of a Pokemon of this species with realistic stats
+    # that takes a primitive integer or a range of integers
+    def spawn(self, levels: int | range, capture_data: CaptureData, battle_condition: BattleCondition | None = None, is_egg: bool = False, force_shiny: bool = False):
+        # Import Pokemon & holder here to avoid circular import error
+        from src.pokemon.pokemon import Pokemon
+        from src import holder
+
+        # Check if 'levels' is a primitive integer
+        if isinstance(levels, int):
+            level = levels
+        else: # 'levels' is a range, so select a random integer in the range
+            level = random.choice(levels)
+
+        # Check if the Pokemon should be shiny
+        if force_shiny:
+            is_shiny = True
+        elif random.random() < resources.SHINY_ODDS: # Otherwise check shiny odds
+            is_shiny = True
+        else: is_shiny = False # Default is_shiny to false
+
+        # Check if hidden ability should be given
+        if len(self.abilities["hidden"]) == 0:
+            is_hidden_ability = False # Set to false if species does not have a hidden ability
+        elif random.random() < resources.HIDDEN_ABILITY_ODDS:
+            is_hidden_ability = True # Set to true if odds are met
+        else: is_hidden_ability = False # Default is_hidden_ability to false
+
+        # Check if using hidden ability
+        if is_hidden_ability:
+            # Set selected ability to species hidden ability
+            ability = self.abilities["hidden"][0]
+        else:
+            # Otherwise set ability to random ability from regular abilities
+            ability = random.choice(self.abilities["regular"])
+
+        # Calculate gender using randomness
+        if random.random() < self.gender_ratio["male"]:
+            gender = Gender.MALE # Set gender to male
+        else:
+            gender = Gender.FEMALE # Otherwise, set gender to female
+
+        # Get the moves this Pokemon knows
+        known_moves = self.get_known_moves(level)
+        # Shuffle known moves
+        random.shuffle(known_moves)
+
+        # Build the instance of the Pokemon
+        pokemon = Pokemon(
+            nickname=self.name.title(),
+            egg=is_egg,
+            shiny=is_shiny,
+            species=self.name,
+            ability=ability,
+            moves=known_moves[:4], # First four known moves
+            tutor_machine_moves=[],
+            gender=gender,
+            nature=random.choice(list(Nature)), # Random nature
+            ivs=StatTable( # IVs are random and between 0 and 31
+                hp=random.randint(0, 31),
+                attack=random.randint(0, 31),
+                special_attack=random.randint(0, 31),
+                defense=random.randint(0, 31),
+                special_defense=random.randint(0, 31),
+                speed=random.randint(0, 31),
+            ),
+            evs=StatTable( # EVs are all zero by default
+                hp=0,
+                attack=0,
+                special_attack=0,
+                defense=0,
+                special_defense=0,
+                speed=0
+            ),
+            level=level,
+            experience=0,
+            friendship=self.base_friendship,
+            condition=battle_condition,
+            capture_data=capture_data
+        )
+
+        # Ensure battle condition is none
+        if pokemon.condition is None:
+            # Create a blank 'healthy' condition
+            pokemon.condition = BattleCondition(
+                health=pokemon.get_stat(Stat.HP),
+                status_condition=None,
+                confused=False,
+                held_item=None,
+                move_set=list(map(
+                    lambda move_name: BattleMove(
+                        move_name,
+                        holder.get_move(move_name).pp,
+                        holder.get_move(move_name).pp,
+                        False
+                    ),
+                    pokemon.moves
+                )),
+                stat_changes=OptionalStatTable()
+            )
+
+        # Return Pokemon instance
+        return pokemon

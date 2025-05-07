@@ -1,0 +1,37 @@
+# This file provides several functions to allow other modules to access
+# content/data such as Pokemon species, moves, items, etc.
+
+# Imports
+
+from src.pack_processor import LoadedPack
+from src.pokemon.move import Move
+
+from src.pokemon.species import Species
+
+# Initialize the 'pack' variable which will be updated to a loaded pack
+# by the main module so that pack data can be queried later
+pack: LoadedPack | None = None
+
+# Define the 'get_species' function that takes a species name and returns
+# a species object
+def get_species(species_name: str) -> Species:
+    # Filter pack species that match the species_name
+    filtered = list(filter(lambda entry: entry.name == species_name, pack.species))
+    # Check if filtered list is empty
+    if len(filtered) == 0:
+        # Raise a KeyError to indicate an invalid species name
+        raise KeyError("Invalid species: " + species_name)
+    # Return the first matching species
+    return filtered[0]
+
+# Define the 'get_move' function that takes a move name and returns
+# a move object
+def get_move(move_name: str) -> Move:
+    # Filter pack move that match the move
+    filtered = list(filter(lambda entry: entry.name == move_name, pack.moves))
+    # Check if filtered list is empty
+    if len(filtered) == 0:
+        # Raise a KeyError to indicate an invalid move name
+        raise KeyError("Invalid move: " + move_name)
+    # Return the first matching move
+    return filtered[0]

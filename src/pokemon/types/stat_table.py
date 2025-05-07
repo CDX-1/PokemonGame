@@ -8,7 +8,7 @@ from typing import TypedDict
 # Classical stat table, used to represent a Pokemon's base stats
 
 class StatTable(TypedDict):
-    health: int
+    hp: int
     attack: int
     defense: int
     special_attack: int
@@ -20,7 +20,7 @@ class StatTable(TypedDict):
 # value (EV) yield.
 
 class OptionalStatTable(TypedDict, total=False):
-    health: int
+    hp: int
     attack: int
     defense: int
     special_attack: int
@@ -31,7 +31,7 @@ class OptionalStatTable(TypedDict, total=False):
 # occurred during battle and adds volatile stats such as accuracy and evasion.
 
 class BattleStatTable(TypedDict, total=False):
-    attack: int
+    hp: int
     defense: int
     special_attack: int
     special_defense: int

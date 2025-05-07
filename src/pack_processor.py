@@ -9,7 +9,6 @@ from src.pokemon.species import Species
 from src.pokemon.move import Move
 
 # Define 'LoadedPack' class to represent a loaded pack
-
 class LoadedPack:
     def __init__(
             self,
@@ -21,7 +20,6 @@ class LoadedPack:
         self.moves = moves
 
 # Define 'load_pack' function that takes a file path and loads the pack at that file
-
 def load_pack(path: str):
     # Initialize the LoadedPack with two empty species and moves lists
     loaded_pack = LoadedPack([], [])

@@ -4,9 +4,6 @@
 
 # Imports
 
-# This is used to allow the 'PackDownloader' class to return itself in its methods/functions
-from __future__ import annotations
-
 import tkinter as tk
 import json
 import os
@@ -14,37 +11,24 @@ import os
 import src.utils.requests as requests
 import src.utils.images as images
 import src.resources as resources
+from src.windows.abstract.TopLevelWindow import TopLevelWindow
 
 # Define the 'PackDownloader' class
-
-class PackDownloader:
+class PackDownloader(TopLevelWindow):
     # Class constructor method takes a 'parent' element such as the Tkinter root
     def __init__(self, parent: tk.Wm | tk.Misc):
-        # Initialize fields
-        self.parent = parent
-        # A blank variable that will contain an instance of our top level window
-        self.window: tk.Toplevel | None = None
+        # Call TopLevelWindow's constructor method
+        super().__init__(parent)
 
     # Define the 'draw' method that returns an instance of its self so that the
     # 'factory' API architecture can be used (method-chaining)
-    def draw(self) -> PackDownloader:
-        # Initialize the top level window using the parent
-        self.window = tk.Toplevel(self.parent)
-        # Set the window title
-        self.window.title("Pack Downloader")
-        # Set the window size
-        self.window.geometry("400x400")
-        # Make the window not resizable for consistency
-        self.window.resizable(False, False)
-
+    def draw(self) -> TopLevelWindow:
+        # Create a basic top level window outline
+        self.window = TopLevelWindow.create_basic_window("Pack Downloader", width=400, height=400)
         # Create a container frame
-        frame = tk.Frame(self.window)
-        # Center the frame by filling and expand it with x and y padding
-        frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
+        frame = TopLevelWindow.create_basic_frame(self.window)
         # Create a label that shows the games logo
-        logo_label = tk.Label(frame, image=images.get_image("logo", (8, 8)), pady=10)
-        logo_label.pack()
+        TopLevelWindow.create_logo_label(frame)
 
         # Create a header label that provides instructions
         header = tk.Label(frame, text="Select the packs you want to download:")
@@ -128,6 +112,10 @@ class PackDownloader:
         continue_button = tk.Button(button_frame, text="Continue", command=proceed)
         continue_button.pack(pady=5)
 
+        # Create a warning label that notifies that downloading content may take a moment
+        warning_label = tk.Label(button_frame, text="Downloading content may take a moment")
+        warning_label.pack(pady=5)
+
         # Create the 'on_checkbutton_var_write' function that will be used to update the
         # 'disabled' state of the continue button so that it is disabled when no checkboxes
         # are selected.
@@ -165,20 +153,5 @@ class PackDownloader:
         # Call the 'on_checkbutton_var_write' once to set the complete button to disabled
         on_checkbutton_var_write()
 
-        # Return an instance of self
-        return self
-
-    # Define the 'wait' method that locks the user into this
-    # top level window and blocks Tkinter until this window has
-    # been destroyed. 'factory' API architecture can be used
-    # (method-chaining)
-    def wait(self) -> PackDownloader:
-        # Force this window to be on top of parent window
-        self.window.transient(self.parent)
-        # Disables all other windows
-        self.window.grab_set()
-        # Starts a local loop and does not exist until this
-        # window is destroyed
-        self.window.wait_window()
         # Return an instance of self
         return self

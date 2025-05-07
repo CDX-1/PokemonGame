@@ -31,7 +31,7 @@ class BattleCondition:
             health: int, # The Pokemon's health
             status_condition: StatusCondition | None, # The Pokemon's status condition, if any (ex: Burned, Poisoned, Paralyzed, etc)
             confused: bool, # Whether the Pokemon is confused or not
-            held_item: str, # The Pokemon's current held item
+            held_item: str | None, # The Pokemon's current held item
             move_set: list[BattleMove], # The Pokemon's move set in 'BattleMove' form
             stat_changes: OptionalStatTable | None # Any active stat changes applied to the Pokemon
     ):
