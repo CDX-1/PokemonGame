@@ -156,15 +156,19 @@ class Species:
             if move["level"] is not None:
                 # Check if Pokemon's level is high enough
                 if level >= move["level"]:
-                    # Append move name to list of known oves
+                    # Append move name to list of known moves
                     known_moves.append(move["name"])
         # Return list of known moves
         return known_moves
 
+    # Define a function that returns the amount of experience needed to level up
+    def get_experience_needed(self, next_level: int):
+        return self.growth_rate.get_experience_needed(next_level) # Delegate to growth rate
+
     # Define a method called 'spawn' that creates a fresh
     # instance of a Pokemon of this species with realistic stats
     # that takes a primitive integer or a range of integers
-    def spawn(self, levels: int | range, capture_data: CaptureData, battle_condition: BattleCondition | None = None, is_egg: bool = False, force_shiny: bool = False):
+    def spawn(self, levels: int | range, capture_data: CaptureData, is_egg: bool = False, force_shiny: bool = False):
         # Import Pokemon & holder here to avoid circular import error
         from src.pokemon.pokemon import Pokemon
         from src import holder
@@ -215,7 +219,6 @@ class Species:
             shiny=is_shiny,
             species=self.name,
             ability=ability,
-            moves=known_moves[:4], # First four known moves
             tutor_machine_moves=[],
             gender=gender,
             nature=random.choice(list(Nature)), # Random nature
@@ -238,29 +241,27 @@ class Species:
             level=level,
             experience=0,
             friendship=self.base_friendship,
-            condition=battle_condition,
+            condition=None,
             capture_data=capture_data
         )
 
-        # Ensure battle condition is none
-        if pokemon.condition is None:
-            # Create a blank 'healthy' condition
-            pokemon.condition = BattleCondition(
-                health=pokemon.get_stat(Stat.HP),
-                status_condition=None,
-                confused=False,
-                held_item=None,
-                move_set=list(map(
-                    lambda move_name: BattleMove(
-                        move_name,
-                        holder.get_move(move_name).pp,
-                        holder.get_move(move_name).pp,
-                        False
-                    ),
-                    pokemon.moves
-                )),
-                stat_changes=OptionalStatTable()
-            )
+        # Create a blank 'healthy' condition
+        pokemon.condition = BattleCondition(
+            health=pokemon.get_stat(Stat.HP),
+            status_condition=None,
+            confused=False,
+            held_item=None,
+            move_set=list(map(
+                lambda move_name: BattleMove(
+                    move_name,
+                    holder.get_move(move_name).pp,
+                    holder.get_move(move_name).pp,
+                    False
+                ),
+                known_moves[:4]
+            )),
+            stat_changes=OptionalStatTable()
+        )
 
         # Return Pokemon instance
         return pokemon

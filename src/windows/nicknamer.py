@@ -44,8 +44,15 @@ class Nicknamer(TopLevelWindow):
         nickname_entry = tk.Entry(frame, textvariable=nickname_var, justify=tk.LEFT)
         nickname_entry.grid(row=1, column=1, sticky=tk.EW, pady=(0, 10))
 
-        # Create a continue button
-        continue_button = tk.Button(frame, text="Continue", relief=tk.GROOVE, command=lambda: self.window.destroy())
+        # Define the continue button callback
+        def callback():
+            # Apply the username
+            self.pokemon.nickname = nickname_var.get()
+            # Destroy the window
+            self.window.destroy()
+
+        # Create a continue button using the callback
+        continue_button = tk.Button(frame, text="Continue", relief=tk.GROOVE, command=callback)
         continue_button.grid(row=2, column=0, columnspan=2, sticky=tk.EW)
 
         # Return an instance of self

@@ -17,6 +17,22 @@ class Stat(Enum):
     SPECIAL_DEFENSE = "special_defense"
     SPEED = "speed"
 
+    # Define a 'format' function which converts the stat name to a formatted version
+    def format(self):
+        # Check which enumeration it is
+        if self == Stat.HP:
+            return "HP"
+        elif self == Stat.ATTACK:
+            return "Attack"
+        elif self == Stat.SPECIAL_ATTACK:
+            return "Sp. Atk"
+        elif self == Stat.DEFENSE:
+            return "Defense"
+        elif self == Stat.SPECIAL_DEFENSE:
+            return "Sp. Def"
+        elif self == Stat.SPEED:
+            return "Speed"
+
     # Define a static method to access any enumeration object using a string literal
     @staticmethod
     def of(value: str):

@@ -39,3 +39,15 @@ class Nature(Enum):
     SASSY = (Stat.SPECIAL_DEFENSE, Stat.SPEED)
     SERIOUS = (Stat.SPEED, Stat.SPEED)                          # NEUTRAL
     TIMID = (Stat.SPEED, Stat.ATTACK)
+
+    # Define a static method to access any enumeration object using a string literal
+    @staticmethod
+    def of(value: str):
+        # Iterate all enumerations
+        for entry in Nature:
+            # Check if current enumeration's name or value matches the 'value' argument
+            if entry.name.lower() == value.lower():
+                # Return matching enumeration
+                return entry
+        # Raise a KeyError to indicate invalid 'value' argument
+        raise KeyError(f"Invalid nature: {value}")

@@ -3,7 +3,7 @@
 
 # Imports
 
-from typing import Literal
+from typing import Literal, cast
 
 from src import holder
 from src.pokemon.species import Species
@@ -15,6 +15,9 @@ from src.pokemon.types.nature import Nature
 from src.pokemon.types.stat import Stat
 from src.pokemon.types.stat_table import StatTable
 
+# Define the max level constant
+MAX_LEVEL = 100
+
 class Pokemon:
     def __init__(
             self,
@@ -23,7 +26,6 @@ class Pokemon:
             shiny: bool, # If this Pokemon is a shiny variation (different colour)
             species: str, # The species that this Pokemon belongs to
             ability: str, # The Pokemon's ability
-            moves: list[str], # The Pokemon's current moves
             tutor_machine_moves: list[list], # The moves this Pokemon has learnt through machines and move tutors
             gender: Gender, # The Pokemon's gender
             nature: Nature, # The Pokemon's nature
@@ -41,7 +43,6 @@ class Pokemon:
         self.shiny = shiny
         self.species = species
         self.ability = ability
-        self.moves = moves
         self.tutor_machine_moves = tutor_machine_moves
         self.gender = gender
         self.nature = nature
@@ -65,6 +66,13 @@ class Pokemon:
         # Delegate this function to the species get_sprite method
         return self.get_species().get_sprite(sprite_type, shiny=self.shiny, scale=scale)
 
+    # Define a function that returns the amount of experience needed to level up
+    def get_level_up_experience(self):
+        # Check if Pokemon is max level
+        if self.level == MAX_LEVEL:
+            return 0 # Return 0
+        return self.get_species().get_experience_needed(self.level + 1) # Delegate to species
+
     # Define a 'get_stat' method that returns the value of a Pokemon's stat
     # Formulas are from Bulbapedia, link: https://bulbapedia.bulbagarden.net/wiki/Stat
     # Using Generation III formula
@@ -75,12 +83,12 @@ class Pokemon:
             # Initialize nature_modifier as 1
             nature_modifier = 1
             # Spread nature tuple
-            increases, decreases = self.nature
+            increases, decreases = self.nature.value
             if stat == increases:
                 nature_modifier = 1.1
             elif stat == decreases:
                 nature_modifier = 0.9
-            return int((((2 * self.get_species().base_stats[stat.value] + self.ivs[stat.value] + (self.evs[stat.name] / 4) * self.level) / 100) + 5) * nature_modifier)
+            return int((((2 * self.get_species().base_stats[stat.value] + self.ivs[stat.value] + (self.evs[stat.value] / 4) * self.level) / 100) + 5) * nature_modifier)
 
     # Define a static method that takes a dictionary and returns
     # an instance of the Pokemon class
@@ -93,15 +101,14 @@ class Pokemon:
             obj["shiny"],
             obj["species"],
             obj["ability"],
-            obj["moves"],
             obj["tutor_machine_moves"],
-            obj["gender"],
-            obj["nature"],
-            obj["ivs"],
-            obj["evs"],
+            Gender.of(obj["gender"]),
+            Nature.of(obj["nature"]),
+            cast(StatTable, obj["ivs"]),
+            cast(StatTable, obj["evs"]),
             obj["level"],
             obj["experience"],
             obj["friendship"],
-            obj["condition"],
-            obj["capture_data"]
+            BattleCondition.of(obj["condition"]),
+            cast(CaptureData, obj["capture_data"]),
         )

@@ -16,6 +16,7 @@ from src.generator.tools.purifier import purify_obj
 from src.pokemon.types.ball import Ball
 from src.pokemon.types.capture_data import CaptureData
 from src.utils import images
+from src.utils.font import get_underline_font, get_font, get_bold_font
 from src.windows.abstract.TopLevelWindow import TopLevelWindow
 import src.holder as holder
 from src.windows.nicknamer import Nicknamer
@@ -51,14 +52,14 @@ class SaveCreator(TopLevelWindow):
 
         # Create the prefix label for the trainer name entry
         name_header = tk.Label(frame, text="What's your name, trainer?")
-        name_header.pack(fill=tk.X, padx=110)
+        name_header.pack(fill=tk.X, padx=100)
 
         # Create the trainer name entry widget
         name_entry = tk.Entry(frame, textvariable=name_var, width=name_header.winfo_width())
-        name_entry.pack(fill=tk.X, padx=110)
+        name_entry.pack(fill=tk.X, padx=100)
 
         # Create the trainer name warning label that specifies the length restriction
-        name_warning = tk.Label(frame, text=f"Name must be between {TRAINER_MIN_LENGTH} and" + \
+        name_warning = tk.Label(frame, text=f"Name must be between {TRAINER_MIN_LENGTH} and " + \
                                             f"{TRAINER_MAX_LENGTH} characters long", fg="red")
         name_warning.pack()
 
@@ -85,14 +86,16 @@ class SaveCreator(TopLevelWindow):
             species = holder.get_species(starter)
             # Create the image label for the starter using the front sprite
             starter_label = tk.Label(starters_frame, image=pokeball_image)
-            starter_label.grid(row=0, column=i)
+            starter_label.grid(row=0, column=i, pady=5)
             # Create a Tkinter boolean var to store whether the starter's
             # Pokeball has been opened
             opened_var = tk.BooleanVar(value=False)
+            # Initialize 'species_label' that will hold the species name
+            species_label: tk.Label | None = None
             # Create a callback function to update the label image
             def update_image(species_name: str, opened: tk.BooleanVar, index: int, label: tk.Label, image: tk.PhotoImage):
-                # Specify nonlocal 'selected_starter' variable
-                nonlocal selected_starter
+                # Specify nonlocal 'selected_starter' and 'species_label' variable
+                nonlocal selected_starter, species_label
                 # Check if the ball has been opened
                 if opened.get():
                     # Update the selected starter
@@ -108,6 +111,26 @@ class SaveCreator(TopLevelWindow):
                     opened.set(True)
             # Bind click event to label
             starter_label.bind("<Button-1>", lambda event, species_name=species.name, opened=opened_var, index=i, label=starter_label, image=species.get_sprite("front"): update_image(species_name, opened, index, label, image))
+
+            # Define a callback to handle hover starts
+            def on_enter(label: tk.Label | None, event):
+                # Check if label is defined
+                if label is None:
+                    return # Exit callback
+                # Apply a highlight thickness to the label to enlarge it
+                label.configure(font=get_bold_font())
+
+            # Define a callback to handle hover ends
+            def on_leave(label: tk.Label | None, event):
+                # Check if label is defined
+                if label is None:
+                    return  # Exit callback
+                # Reset the highlight thickness to 0
+                label.configure(font=get_font())
+
+            # Bind the hover start and hover end callbacks
+            starter_label.bind("<Enter>", lambda event, label=species_label: on_enter(label, event))
+            starter_label.bind("<Leave>", lambda event, label=species_label: on_leave(label, event))
 
         # Create a label that shows the selected starter
         selected_starter_label = tk.Label(frame, textvariable=starter_var)
@@ -135,7 +158,7 @@ class SaveCreator(TopLevelWindow):
 
             # Create an instance of the starter
             starter_pokemon = holder.get_species(selected_starter).spawn(
-                levels=5,
+                levels=7,
                 capture_data=CaptureData(
                     ball=Ball.POKE_BALL,
                     original_trainer=name,
@@ -158,12 +181,12 @@ class SaveCreator(TopLevelWindow):
                 team=[starter_pokemon],
                 box=[],
                 badges=0,
+                yen=300, # Give player 300 yen to start with
                 wins=0,
                 losses=0
             )
 
             # Write the save to disk
-
             # Open the save file in write (W) mode
             with open(f"saves/{trainer_id}-{timestamp}.json", "w") as f:
                 # Write purified save object to file

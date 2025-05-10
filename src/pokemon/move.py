@@ -66,6 +66,10 @@ class Move:
         self.flinch_chance = flinch_chance
         self.stat_chance = stat_chance
 
+    # Define a format function that formats the name of this move cleanly
+    def format(self):
+        return self.name.replace("_", " ").title()
+
     # Define a static method, 'from_obj,' that takes a dictionary
     # and converts it into this class
     @staticmethod

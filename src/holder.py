@@ -1,6 +1,6 @@
 # This file provides several functions to allow other modules to access
 # content/data such as Pokemon species, moves, items, etc.
-
+from src.game.Save import Save
 # Imports
 
 from src.pack_processor import LoadedPack
@@ -11,6 +11,10 @@ from src.pokemon.species import Species
 # Initialize the 'pack' variable which will be updated to a loaded pack
 # by the main module so that pack data can be queried later
 pack: LoadedPack | None = None
+
+# Initialize the 'save' variable which will be updated to a loaded save
+# by the main menu so that other modules can access the current save
+save: Save | None = None
 
 # Define the 'get_species' function that takes a species name and returns
 # a species object

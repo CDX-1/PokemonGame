@@ -54,7 +54,8 @@ routes = [
         ],
         "rare": [
             {"species": "abra", "min_level": 10, "max_level": 14},
-            {"species": "meowth", "min_level": 10, "max_level": 14}
+            {"species": "meowth", "min_level": 10, "max_level": 14},
+            {"species": "magikarp", "min_level": 5, "max_level": 13}
         ]
     },
     {
@@ -92,7 +93,8 @@ routes = [
         ],
         "rare": [
             {"species": "growlithe", "min_level": 15, "max_level": 20},
-            {"species": "chansey", "min_level": 15, "max_level": 20}
+            {"species": "chansey", "min_level": 15, "max_level": 20},
+            {"species": "lickitung", "min_level": 15, "max_level": 20},
         ]
     },
     {
@@ -140,7 +142,9 @@ routes = [
         ],
         "rare": [
             {"species": "lapras", "min_level": 15, "max_level": 20},
-            {"species": "dratini", "min_level": 23, "max_level": 28}
+            {"species": "dratini", "min_level": 23, "max_level": 28},
+            {"species": "hitmonchan", "min_level": 20, "max_level": 24},
+            {"species": "hitmonlee", "min_level": 20, "max_level": 24},
         ]
     },
     {
@@ -196,7 +200,8 @@ routes = [
         ],
         "rare": [
             {"species": "marowak", "min_level": 33, "max_level": 38},
-            {"species": "snorlax", "min_level": 30, "max_level": 35}
+            {"species": "snorlax", "min_level": 30, "max_level": 35},
+            {"species": "kangaskhan", "min_level": 30, "max_level": 38}
         ]
     },
     {

@@ -61,7 +61,7 @@ def about():
 # Config game callback
 def config():
     # Create a top level window
-    window = TopLevelWindow.create_basic_window("Config", width=160, height=150)
+    window = TopLevelWindow.create_basic_window("Config", width=200, height=150)
     # Create a centered container frame
     frame = tk.Frame(window)
     frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)

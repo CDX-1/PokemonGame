@@ -10,6 +10,7 @@ import os
 from src.menubar import setup_menubar
 from src.pack_processor import LoadedPack, load_pack
 from src.windows.main_menu import MainMenu
+from src.windows.navigator import Navigator
 from src.windows.pack_downloader import PackDownloader
 import src.utils.images as images
 import src.holder as holder
@@ -22,7 +23,7 @@ def main():
     # Set the title of the root window
     root.title("Pokemon")
     # Set size of the root window
-    root.geometry("400x400")
+    root.geometry("700x400")
     # Make root window not resizable
     root.resizable(False, False)
 
@@ -52,8 +53,13 @@ def main():
     # Provide loaded pack to the holder
     holder.pack = loaded_pack
 
+    # Define a callback function to handle when the main menu is complete
+    def on_save_select():
+        # Draw the navigator as main menu will only exit once a save is selected
+        Navigator(root).draw()
+
     # Draw the main menu frame
-    MainMenu(root).draw()
+    MainMenu(root, on_save_select).draw()
 
     # Execute the root main loop
     root.mainloop()
@@ -75,6 +81,18 @@ def load_sprites(pack: LoadedPack):
         images.load_image(f"{species.name}_regular_back", f"assets/{species.name}/regular/back.png") # Regular Back
         images.load_image(f"{species.name}_shiny_front", f"assets/{species.name}/shiny/front.png") # Shiny Front
         images.load_image(f"{species.name}_shiny_back", f"assets/{species.name}/shiny/back.png") # Shiny Back
+
+    # Load button icons
+    images.load_image("encounter", f"assets/buttons/encounter_icon.png")
+    images.load_image("bag", f"assets/buttons/bag_icon.png")
+    images.load_image("box", f"assets/buttons/box_icon.png")
+    images.load_image("shop", f"assets/buttons/shop_icon.png")
+    images.load_image("swap", f"assets/buttons/swap_icon.png")
+
+    # Load type icons
+    for pokemon_type in ["normal", "fighting", "flying", "poison", "ground", "rock", "bug", "ghost", "steel", "fire", "water",
+                         "grass", "electric", "psychic", "ice", "dragon", "dark", "flying"]:
+        images.load_image(pokemon_type, f"assets/types/{pokemon_type}.png")
 
 # Ensure that this file is being directly executed and not imported
 # as a module for another file

@@ -9,17 +9,21 @@ from __future__ import annotations
 import tkinter as tk
 import os
 import json
+from typing import Callable
 
+from src import holder
 from src.game.Save import Save
 from src.windows.abstract.TopLevelWindow import TopLevelWindow
 from src.windows.save_creator import SaveCreator
 
 # Define the 'MainMenu' class
 class MainMenu:
-    # Class constructor method takes a 'parent' element such as the Tkinter root
-    def __init__(self, parent: tk.Wm | tk.Misc):
+    # Class constructor method takes a 'parent' element such as the Tkinter root and a
+    # callback for once a save has been selected and the main menu is destroyed
+    def __init__(self, parent: tk.Wm | tk.Misc, callback: Callable[[], None]):
         # Initialize fields
         self.parent = parent
+        self.callback = callback
         # A blank variable that will contain an instance of our frame
         self.frame: tk.Frame | None = None
 
@@ -28,18 +32,21 @@ class MainMenu:
     def draw(self) -> MainMenu:
         # Initialize the frame
         self.frame = tk.Frame(self.parent)
-        self.frame.pack()
+        self.frame.pack(fill=tk.BOTH, expand=True)
+
+        # Create a container frame
+        container = tk.Frame(self.frame)
+        container.pack(fill=tk.BOTH, expand=True)
 
         # Add the logo
-        TopLevelWindow.create_logo_label(self.frame, scale=(15, 15))
+        TopLevelWindow.create_logo_label(container, scale=(15, 15))
 
         # Create a canvas
-        canvas = tk.Canvas(self.frame)
-        canvas.pack()
-
+        canvas = tk.Canvas(container)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Create a scrollbar
-        scrollbar = tk.Scrollbar(self.frame, orient=tk.VERTICAL, command=canvas.yview)
+        scrollbar = tk.Scrollbar(container, orient=tk.VERTICAL, command=canvas.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Configure canvas to work with scrollbar
@@ -53,7 +60,7 @@ class MainMenu:
         # Define a function to update the scroll region when the size of saves_frame updates
         def update_scroll_region(event=None):
             # Ensure the saves_frame is fully updated before calculating bbox
-            self.frame.update_idletasks()
+            container.update_idletasks()
             # Update size of scroll region
             canvas.configure(scrollregion=canvas.bbox("all"))
             # Update width of canvas frame to fit all content
@@ -66,10 +73,10 @@ class MainMenu:
         def on_mouse_wheel(event):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
-        # Bind events for all platforms
-        canvas.bind_all("<MouseWheel>", on_mouse_wheel)  # For Windows
-        canvas.bind_all("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))  # For Linux
-        canvas.bind_all("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))  # For Linux
+        # Bind scroll events to the canvas (not bind_all, to limit to canvas)
+        canvas.bind("<MouseWheel>", on_mouse_wheel)  # For Windows and macOS trackpads
+        canvas.bind("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))  # Up (macOS/Linux)
+        canvas.bind("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))  # Down (macOS/Linux)
 
         # Define a function to load all saves
         def load_saves():
@@ -80,6 +87,15 @@ class MainMenu:
 
             # Initialize a list of saves
             saves = []
+
+            # Create a callback function to load the save
+            def callback(loaded_save: Save):
+                # Update the holder's current save
+                holder.save = loaded_save
+                # Destroy main menu
+                self.frame.destroy()
+                # Call the callback
+                self.callback()
 
             # Iterate all files in /saves/ folder
             for save_file in os.listdir("saves"):
@@ -125,8 +141,14 @@ class MainMenu:
                         counter += 1
 
                     # Create play button
-                    play_button = tk.Button(save_frame, text="Play Save", relief=tk.GROOVE)
+                    play_button = tk.Button(save_frame, text="Play Save", relief=tk.GROOVE, command = lambda loaded_save=save: callback(loaded_save))
                     play_button.grid(row=2, column=0, columnspan=counter, sticky=tk.EW)
+
+            # Check if 'saves' is empty
+            if len(saves) == 0:
+                # Create a label that says that no saves exist
+                no_saves_label = tk.Label(saves_frame, text="You have no saves")
+                no_saves_label.pack()
 
             # Update size of scroll region
             update_scroll_region()
@@ -139,9 +161,13 @@ class MainMenu:
         def create_new_save():
             SaveCreator(self.parent, callback=load_saves).draw().wait()
 
+        # Create a frame to hold the button
+        button_frame = tk.Frame(self.frame)
+        button_frame.pack()
+
         # Append a button to create a new save at the bottom of the
         # frame that will call the 'create_new_save' callback
-        create_save = tk.Button(self.frame, text="Create New Save", command=create_new_save, relief=tk.GROOVE)
+        create_save = tk.Button(button_frame, text="Create New Save", command=create_new_save, relief=tk.GROOVE)
         create_save.pack(pady=5)
 
         # Return an instance of the MainMenu

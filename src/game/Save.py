@@ -4,7 +4,6 @@
 from src.pokemon.pokemon import Pokemon
 
 # Define 'Save' class
-
 class Save:
     def __init__(
             self,
@@ -15,6 +14,7 @@ class Save:
             team: list[Pokemon], # The trainer's team
             box: list[list[Pokemon]], # The trainer's box (Pokemon in storage)
             badges: int, # The amount of badges the trainer has,
+            yen: int, # The amount of money the trainer has
             wins: int, # The amount of battles the trainer has won
             losses: int # The amount of battles the trainer has lost
     ):
@@ -26,6 +26,7 @@ class Save:
         self.team = team
         self.box = box
         self.badges = badges
+        self.yen = yen
         self.wins = wins
         self.losses = losses
 
@@ -42,6 +43,7 @@ class Save:
             list(map(lambda entry: Pokemon.from_obj(entry), obj["team"])), # Map each Pokemon from dictionary in the team to a Pokemon object
             list(map(lambda box: list(map(lambda entry: Pokemon.from_obj(entry), box)), obj["box"])), # Map each Pokemon from dictionary in the boxes to a Pokemon object
             obj["badges"],
+            obj["yen"],
             obj["wins"],
             obj["losses"]
         )
