@@ -30,6 +30,14 @@ def main():
     # Make root window not resizable
     root.resizable(False, False)
 
+    # Keep looping until the 'packs' folder is no longer empty
+    while len(os.listdir("packs")) == 0:
+        # Show dialogue to inform user something is happening
+        messagebox.showinfo("Downloading", "We're currently downloading some content! If this is your " + \
+                            "first time using this program, please wait until the main menu loads.")
+        # Download data
+        download()
+
     # Create a shutdown callback that will be run when the program shuts down
     def shutdown_callback():
         # Check if there is an active save
@@ -52,14 +60,6 @@ def main():
     # Load the main images through the 'load_images' function
     # which is defined later
     load_images()
-
-    # Keep looping until the 'packs' folder is no longer empty
-    while len(os.listdir("packs")) == 0:
-        # Show dialogue to inform user something is happening
-        messagebox.showinfo("Downloading", "We're currently downloading some content! If this is your " +\
-                            "first time using this program, please wait until the main menu loads.")
-        # Download data
-        download()
 
     # Load the generation 1 pack
     loaded_pack = load_pack("packs/gen-1.json")
