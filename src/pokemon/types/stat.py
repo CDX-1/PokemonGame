@@ -33,6 +33,22 @@ class Stat(Enum):
         elif self == Stat.SPEED:
             return "Speed"
 
+        # Define a 'format_short' function which converts the stat name to a shorter formatted version
+    def format_short(self):
+        # Check which enumeration it is
+        if self == Stat.HP:
+            return "HP"
+        elif self == Stat.ATTACK:
+            return "Atk"
+        elif self == Stat.SPECIAL_ATTACK:
+            return "Sp. Atk"
+        elif self == Stat.DEFENSE:
+            return "Def"
+        elif self == Stat.SPECIAL_DEFENSE:
+            return "Sp. Def"
+        elif self == Stat.SPEED:
+            return "Spe"
+
     # Define a static method to access any enumeration object using a string literal
     @staticmethod
     def of(value: str):

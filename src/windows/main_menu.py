@@ -12,7 +12,7 @@ import json
 from typing import Callable
 
 from src import holder
-from src.game.Save import Save
+from src.game.save import Save
 from src.windows.abstract.TopLevelWindow import TopLevelWindow
 from src.windows.save_creator import SaveCreator
 

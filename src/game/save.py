@@ -1,6 +1,12 @@
 # This file contains the class definition for 'Save' which represents
 # a players save and includes data such as the player's Pokemon team,
 # progression, items, etc.
+
+# Imports
+
+import json
+
+from src.generator.tools.purifier import purify_obj
 from src.pokemon.pokemon import Pokemon
 
 # Define 'Save' class
@@ -29,6 +35,16 @@ class Save:
         self.yen = yen
         self.wins = wins
         self.losses = losses
+
+    # Define the write function which will write this save file to disk
+    def write(self):
+        # Write the save to disk
+        # Open the save file in write (W) mode
+        with open(f"saves/{self.trainer_id}-{self.created_at}.json", "w") as f:
+            # Write purified save object to file
+            json.dump(purify_obj(self), f, indent=4)
+        # Log that the save was written to disk
+        print(f"Wrote save: '{self.trainer_id}-{self.created_at}.json' to disk")
 
     # Define a static method that takes a dictionary and returns
     # an instance of the save class

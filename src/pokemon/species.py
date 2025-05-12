@@ -168,7 +168,7 @@ class Species:
     # Define a method called 'spawn' that creates a fresh
     # instance of a Pokemon of this species with realistic stats
     # that takes a primitive integer or a range of integers
-    def spawn(self, levels: int | range, capture_data: CaptureData, is_egg: bool = False, force_shiny: bool = False):
+    def spawn(self, levels: int | range, capture_data: CaptureData | None, is_egg: bool = False, force_shiny: bool = False):
         # Import Pokemon & holder here to avoid circular import error
         from src.pokemon.pokemon import Pokemon
         from src import holder
@@ -201,11 +201,15 @@ class Species:
             # Otherwise set ability to random ability from regular abilities
             ability = random.choice(self.abilities["regular"])
 
-        # Calculate gender using randomness
-        if random.random() < self.gender_ratio["male"]:
-            gender = Gender.MALE # Set gender to male
+        # Check if Pokemon is genderless
+        if self.gender_ratio is None:
+            gender = Gender.GENDERLESS
         else:
-            gender = Gender.FEMALE # Otherwise, set gender to female
+            # Calculate gender using randomness
+            if random.random() < self.gender_ratio["male"]:
+                gender = Gender.MALE # Set gender to male
+            else:
+                gender = Gender.FEMALE # Otherwise, set gender to female
 
         # Get the moves this Pokemon knows
         known_moves = self.get_known_moves(level)

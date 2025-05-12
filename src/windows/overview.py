@@ -32,8 +32,10 @@ class Overview(TopLevelWindow):
         # Define 'species' as a shorthand for self.pokemon.get_species
         species = self.pokemon.get_species()
 
-        # Create a basic top level window outline
-        self.window = TopLevelWindow.create_basic_window("Save Creator", width=600, height=500)
+        # Check if window does not exist
+        if self.window is None:
+            # Create a basic top level window outline
+            self.window = TopLevelWindow.create_basic_window(pkm.nickname, width=600, height=500)
         # Create a container frame
         frame = TopLevelWindow.create_basic_frame(self.window)
 
@@ -41,8 +43,18 @@ class Overview(TopLevelWindow):
         sprite_label = tk.Label(frame, image=pkm.get_sprite("front"))
         sprite_label.grid(row=0, column=0, rowspan=3)
 
+        # Get current experience
+        current_exp = pkm.experience
+        # Get total experience needed for next level
+        needed_exp = pkm.get_level_up_experience()
+        # Round quotient
+        if needed_exp == 0:
+            exp_completion = "0.00"
+        else:
+            exp_completion = format((current_exp / needed_exp) * 100, ".2f")
+
         # Create a nickname label
-        nickname_label = tk.Label(frame, text=pkm.nickname, anchor=tk.W)
+        nickname_label = tk.Label(frame, text=f"{pkm.nickname}\t Lv. {pkm.level} ({exp_completion}%)", anchor=tk.W)
         nickname_label.grid(row=0, column=1, columnspan=3, sticky=tk.W)
 
         # Check if Pokemon is shiny
@@ -74,7 +86,7 @@ class Overview(TopLevelWindow):
         flavour_header.grid(row=3, column=0, columnspan=4, sticky=tk.EW)
 
         # Add a flavour label
-        flavour_label = tk.Label(frame, text=species.desc.replace("\n", " "), justify=tk.LEFT, anchor=tk.W, wraplength=350)
+        flavour_label = tk.Label(frame, text=species.desc.replace("\n", " ").replace("\f", " "), justify=tk.LEFT, anchor=tk.W, wraplength=350)
         flavour_label.grid(row=4, column=0, columnspan=4, sticky=tk.EW)
 
         # Creating a table for stats
@@ -117,66 +129,118 @@ class Overview(TopLevelWindow):
             ev_prefix = tk.Label(stats_frame, text=pkm.evs[stat.value], anchor=tk.W)
             ev_prefix.grid(row=7 + i, column=6, sticky=tk.W, padx=(0, 20))
 
+        # Create an ability frame
+        ability_frame = tk.Frame(frame)
+        ability_frame.grid(row=5, column=0, columnspan=2, sticky=tk.W)
+
+        # Add an ability prefix label
+        ability_prefix = tk.Label(ability_frame, text="Ability:", anchor=tk.W, font=get_bold_font())
+        ability_prefix.grid(row=0, column=0)
+
+        # Add an ability label
+        ability_label = tk.Label(ability_frame, text=pkm.ability.title(), anchor=tk.W)
+        ability_label.grid(row=0, column=1)
+
+        # Create a nature frame
+        nature_frame = tk.Frame(frame)
+        nature_frame.grid(row=5, column=1, columnspan=2, sticky=tk.W)
+
+        # Add an ability prefix label
+        nature_prefix = tk.Label(nature_frame, text="Nature:", anchor=tk.W, font=get_bold_font())
+        nature_prefix.grid(row=0, column=0)
+
+        # Spread the nature
+        increase, decrease = pkm.nature.value
+
+        # Convert to short formatted names
+        increase = increase.format_short()
+        decrease = decrease.format_short()
+
+        # Add an ability label
+        nature_label = tk.Label(nature_frame, text=f"{pkm.nature.name.lower().title()} ({increase}+/{decrease}-)", anchor=tk.W)
+        nature_label.grid(row=0, column=1)
+
         # Create a header frame for all the move headers
         header_frame = tk.Frame(frame)
         header_frame.grid(row=9, column=0, columnspan=4, sticky=tk.W, pady=(10, 0))
 
-        # Create a header label for the Pokemon's type name
+        # Create a header label for the move's type name
         type_header = tk.Label(header_frame, text="Type", anchor=tk.W, font=get_bold_font(), width=4)
         type_header.grid(row=0, column=0, sticky=tk.W)
 
-        # Create a header label for the Pokemon's moves name
-        move_header = tk.Label(header_frame, text="Move", anchor=tk.W, font=get_bold_font(), width=10)
-        move_header.grid(row=0, column=1, sticky=tk.W)
+        # Create a header label for the move's type name
+        category_header = tk.Label(header_frame, text="Cat.", anchor=tk.W, font=get_bold_font(), width=5)
+        category_header.grid(row=0, column=1, sticky=tk.W)
 
-        # Create a header label for the Pokemon's moves power
-        move_header = tk.Label(header_frame, text="Pow.", anchor=tk.W, font=get_bold_font(), width=5)
+        # Create a header label for the move's name
+        move_header = tk.Label(header_frame, text="Move", anchor=tk.W, font=get_bold_font(), width=15)
         move_header.grid(row=0, column=2, sticky=tk.W)
 
-        # Create a header label for the Pokemon's moves accuracy
+        # Create a header label for the move's power
+        move_header = tk.Label(header_frame, text="Pow.", anchor=tk.W, font=get_bold_font(), width=5)
+        move_header.grid(row=0, column=3, sticky=tk.W)
+
+        # Create a header label for the move's accuracy
         accuracy_header = tk.Label(header_frame, text="Acc.", anchor=tk.W, font=get_bold_font(), width=5)
-        accuracy_header.grid(row=0, column=3, sticky=tk.W)
+        accuracy_header.grid(row=0, column=4, sticky=tk.W)
 
-        # Create a header label for the Pokemon's moves description
-        desc_header = tk.Label(header_frame, text="Desc.", anchor=tk.W, font=get_bold_font(), width=25)
-        desc_header.grid(row=0, column=4, sticky=tk.W)
+        # Create a header label for the move's description
+        desc_header = tk.Label(header_frame, text="Desc.", anchor=tk.W, font=get_bold_font(), width=30)
+        desc_header.grid(row=0, column=5, sticky=tk.W)
 
-        # Create a header label for swapping the Pokemon's moves
+        # Create a header label for swapping the move
         swap_header = tk.Label(header_frame, text="Swap", anchor=tk.W, font=get_bold_font())
-        swap_header.grid(row=0, column=5, sticky=tk.W)
+        swap_header.grid(row=0, column=6, sticky=tk.W)
 
         # Iterate each move, enumerated
         for i, move_obj in enumerate(pkm.condition.move_set):
             # Retrieve move object
             move = holder.get_move(move_obj.name)
+
             # Create a frame for the move data
             move_frame = tk.Frame(frame)
             move_frame.grid(row=10 + i, column=0, columnspan=4, sticky=tk.W)
+
             # Create a label for the move type
-            type_label = tk.Label(move_frame, image=images.get_image(move.type), anchor=tk.CENTER, width=38)
+            type_label = tk.Label(move_frame, image=images.get_image(move.type), anchor=tk.CENTER, width=30)
             type_label.grid(row=i, column=0)
+
+            # Create a label for the move category
+            category_label = tk.Label(move_frame, text=move.damage_class.format(), anchor=tk.W, width=5)
+            category_label.grid(row=i, column=1, sticky=tk.W)
+
             # Create a label for the move name
-            move_label = tk.Label(move_frame, text=move.format(), anchor=tk.W, width=10)
-            move_label.grid(row=i, column=1, sticky=tk.W)
+            move_label = tk.Label(move_frame, text=move.format(), anchor=tk.W, width=15)
+            move_label.grid(row=i, column=2, sticky=tk.W)
+
             # Create a label for the move power
             power_label = tk.Label(move_frame, text=move.power, anchor=tk.W, width=5)
-            power_label.grid(row=i, column=2, sticky=tk.W)
+            power_label.grid(row=i, column=3, sticky=tk.W)
+
             # Create a label for the move accuracy
             accuracy_label = tk.Label(move_frame, text=f"{move.accuracy}%", anchor=tk.W, width=5)
-            accuracy_label.grid(row=i, column=3, sticky=tk.W)
+            accuracy_label.grid(row=i, column=4, sticky=tk.W)
+
             # Create a label for the move description
             description_label = tk.Label(move_frame, text=move.desc.replace("\n", " "), anchor=tk.W,
-                                         wraplength=250, justify=tk.LEFT, width=25)
-            description_label.grid(row=i, column=4, sticky=tk.W)
+                                         wraplength=200, justify=tk.LEFT, width=30)
+            description_label.grid(row=i, column=5, sticky=tk.W)
 
             # Define a callback function to handle swapping
             def callback(selected_move: Move):
-                # Create and open the move swapper for the selected move
-                MoveSwapper(self.parent, pkm, selected_move).draw().wait()
+                # Define a nested callback
+                def nested_callback():
+                    # Destroy the frame
+                    frame.destroy()
+                    # Redraw the window
+                    self.draw()
+
+                # Create and open the move swapper for the selected move and set nested callback
+                MoveSwapper(self.parent, pkm, selected_move, nested_callback).draw().wait()
 
             # Create a label for the swap button
             swap_label = tk.Label(move_frame, image=images.get_image("swap", (30, 30)), anchor=tk.W)
-            swap_label.grid(row=i, column=5, sticky=tk.W)
+            swap_label.grid(row=i, column=6, sticky=tk.W)
 
             # Bind swap callback to swap label
             swap_label.bind("<Button-1>", lambda event, selected_move=move: callback(selected_move))

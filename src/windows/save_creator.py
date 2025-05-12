@@ -6,19 +6,18 @@
 import json
 import random
 import time
-
 import tkinter as tk
 from tkinter import messagebox
 from typing import Callable
 
-from src.game.Save import Save
+import src.holder as holder
+from src.game.save import Save
 from src.generator.tools.purifier import purify_obj
 from src.pokemon.types.ball import Ball
 from src.pokemon.types.capture_data import CaptureData
 from src.utils import images
-from src.utils.font import get_underline_font, get_font, get_bold_font
+from src.utils.font import get_font, get_bold_font
 from src.windows.abstract.TopLevelWindow import TopLevelWindow
-import src.holder as holder
 from src.windows.nicknamer import Nicknamer
 
 # Create a list that declares the list of starter species
@@ -186,11 +185,8 @@ class SaveCreator(TopLevelWindow):
                 losses=0
             )
 
-            # Write the save to disk
-            # Open the save file in write (W) mode
-            with open(f"saves/{trainer_id}-{timestamp}.json", "w") as f:
-                # Write purified save object to file
-                json.dump(purify_obj(save), f, indent=4)
+            # Write save to disk
+            save.write()
 
             # Show dialogue box to inform of completion
             messagebox.showinfo("Save", "Created new save!")

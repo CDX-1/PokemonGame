@@ -1,31 +1,46 @@
 # This is the main file that is executed when the program is run
 # This file coordinates the showing of different windows and contains
-# the main function.
+# the main functions
 
 # Imports
 
 import tkinter as tk
+from tkinter import messagebox
+import json
 import os
 
 from src.menubar import setup_menubar
 from src.pack_processor import LoadedPack, load_pack
+from src.utils import requests
 from src.windows.main_menu import MainMenu
 from src.windows.navigator import Navigator
-from src.windows.pack_downloader import PackDownloader
 import src.utils.images as images
-import src.holder as holder
+import src.resources as resources
 
 # Define the main function
-
 def main():
+    import src.holder as holder
     # Create the Tkinter root
     root = tk.Tk()
+    holder.root = root
     # Set the title of the root window
     root.title("Pokemon")
     # Set size of the root window
     root.geometry("700x400")
     # Make root window not resizable
     root.resizable(False, False)
+
+    # Create a shutdown callback that will be run when the program shuts down
+    def shutdown_callback():
+        # Check if there is an active save
+        if holder.save is not None:
+            # Save to disk
+            holder.save.write()
+        # Destroy root
+        root.destroy()
+
+    # Attach shutdown callback to the WM_DELETE_WINDOW event which is called when a window is destroyed
+    root.protocol("WM_DELETE_WINDOW", shutdown_callback)
 
     # Setup the menubar
     setup_menubar(root)
@@ -40,8 +55,11 @@ def main():
 
     # Keep looping until the 'packs' folder is no longer empty
     while len(os.listdir("packs")) == 0:
-        # Prompt the user with the 'PackDownloader' window
-        PackDownloader(root).draw().wait()
+        # Show dialogue to inform user something is happening
+        messagebox.showinfo("Downloading", "We're currently downloading some content! If this is your " +\
+                            "first time using this program, please wait until the main menu loads.")
+        # Download data
+        download()
 
     # Load the generation 1 pack
     loaded_pack = load_pack("packs/gen-1.json")
@@ -93,6 +111,49 @@ def load_sprites(pack: LoadedPack):
     for pokemon_type in ["normal", "fighting", "flying", "poison", "ground", "rock", "bug", "ghost", "steel", "fire", "water",
                          "grass", "electric", "psychic", "ice", "dragon", "dark", "flying"]:
         images.load_image(pokemon_type, f"assets/types/{pokemon_type}.png")
+
+# Define the download function
+def download():
+    # Download assets
+    requests.download(resources.assets, "assets/", unzip=True)
+    print(f"Downloaded and unzipped {resources.assets}")
+
+    # Iterate all packs
+    for name, pack_data in resources.packs.items():
+        # Spread pack_data
+        pack_name, pack_url = pack_data
+        # Print that the pack has started downloading
+        print(f"Downloading and unzipping {pack_url}...")
+        # Use the requests utility to download the pack from the URL, unzip it and put it in the packs/ folder
+        requests.download(pack_url, "packs/", unzip=True)
+        # Print that the pack has finished downloading and unzipping
+        print(f"Downloaded and unzipped {pack_url}")
+
+        # Iterate all packs in pack folder
+        for pack in os.listdir("packs/"):
+            # Open pack file in read (R) mode with the file referenced as 'f'
+            with open(f"packs/{pack}", 'r') as f:
+                # Load JSON as Python object
+                data = json.load(f)
+                # Iterate all Pokemon species
+                for species in data["species"]:
+                    # Parse species name
+                    species_name = species["name"]
+                    # Parse sprite table
+                    sprites = species["sprites"]
+                    regular_sprites = sprites["regular"]
+                    shiny_sprites = sprites["shiny"]
+                    # Download all regular sprites (front & back) to assets
+                    requests.download(regular_sprites["front"], f"assets/{species_name}/regular/front.png")
+                    requests.download(regular_sprites["back"], f"assets/{species_name}/regular/back.png")
+                    # Download all shiny sprites (front & back) to assets
+                    requests.download(shiny_sprites["front"], f"assets/{species_name}/shiny/front.png")
+                    requests.download(shiny_sprites["back"], f"assets/{species_name}/shiny/back.png")
+                    # Inform user that images were downloaded
+                    print(f"Downloaded sprite assets for: {species_name} ({pack})")
+
+        # Inform user that asset download is complete
+        print("Finished downloaded assets")
 
 # Ensure that this file is being directly executed and not imported
 # as a module for another file

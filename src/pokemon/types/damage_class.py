@@ -14,6 +14,15 @@ class DamageClass(Enum):
     SPECIAL = "special"
     STATUS = "status"
 
+    # Define a format function that formats the damage class for GUIs
+    def format(self):
+        if self.value == "physical":
+            return "PHYS"
+        elif self.value == "special":
+            return "SPEC"
+        elif self.value == "status":
+            return "STAT"
+
     # Define a static method to access any enumeration object using a string literal
     @staticmethod
     def of(value: str):

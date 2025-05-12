@@ -1,12 +1,18 @@
 # This file provides several functions to allow other modules to access
 # content/data such as Pokemon species, moves, items, etc.
-from src.game.Save import Save
+
 # Imports
 
+import tkinter as tk
+
+from src.game.save import Save
 from src.pack_processor import LoadedPack
 from src.pokemon.move import Move
 
 from src.pokemon.species import Species
+
+# Initialize the root variable for later access
+root: tk.Tk | None
 
 # Initialize the 'pack' variable which will be updated to a loaded pack
 # by the main module so that pack data can be queried later

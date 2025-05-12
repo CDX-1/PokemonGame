@@ -10,9 +10,12 @@ from __future__ import annotations
 import tkinter as tk
 
 from src import holder
+from src.game.battle import Battle
+from src.pokemon.species import Species
 from src.pokemon.types.stat import Stat
 from src.utils import images
 from src.utils.font import get_mono_font, get_title_font
+from src.windows.battle_window import BattleWindow
 from src.windows.overview import Overview
 
 # Define the 'Navigator' class
@@ -75,7 +78,7 @@ class Navigator:
                 # Check if Pokemon is shiny and not an egg
                 if pokemon.shiny and not pokemon.egg:
                     # Change text color to gold
-                    nickname_label.config(fg="gold")
+                    nickname_label.config(fg="#d3b349")
 
                 # Iterate Pokemon's types, enumerated
                 for j, pokemon_type in enumerate(pokemon.get_species().types):
@@ -127,7 +130,14 @@ class Navigator:
 
         # Define the encounter callback
         def encounter(event):
-            print("encounter")
+            # Initialize a battle instance
+            battle = Battle(
+                holder.save.team,
+                [holder.get_species("mewtwo").spawn(10, None, False, True)],
+                False
+            )
+            # Initialize a battle window
+            BattleWindow(self.parent, battle, lambda: battle.start_battle()).draw().wait()
 
         # Define the Bag callback
         def bag(event):

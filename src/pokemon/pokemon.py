@@ -35,7 +35,7 @@ class Pokemon:
             experience: int, # The Pokemon's experience points
             friendship: int, # The Pokemon's friendship
             condition: BattleCondition, # The Pokemon's current battling condition
-            capture_data: CaptureData # Metadata about how the Pokemon was captured and the original trainer (OT)
+            capture_data: CaptureData | None # Metadata about how the Pokemon was captured and the original trainer (OT)
     ):
         # Initialize fields
         self.nickname = nickname
@@ -88,7 +88,12 @@ class Pokemon:
                 nature_modifier = 1.1
             elif stat == decreases:
                 nature_modifier = 0.9
-            return int((((2 * self.get_species().base_stats[stat.value] + self.ivs[stat.value] + (self.evs[stat.value] / 4) * self.level) / 100) + 5) * nature_modifier)
+            # Return calculated value of stat
+            return int((((2 * self.get_species().base_stats[stat.value] + self.ivs[stat.value] + (self.evs[stat.value] / 4)) / 100) * self.level + 5) * nature_modifier)
+
+    # Define a get_moves function that returns a list of the Pokemon's move set
+    def get_moves(self) -> list[str]:
+        return list(map(lambda entry: entry.name, self.condition.move_set))
 
     # Define a static method that takes a dictionary and returns
     # an instance of the Pokemon class
