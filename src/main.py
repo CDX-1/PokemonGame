@@ -30,6 +30,12 @@ def main():
     # Make root window not resizable
     root.resizable(False, False)
 
+    # Ensure /packs/ and /saves/ folder exists
+    os.makedirs("packs", exist_ok=True)
+    os.makedirs("saves", exist_ok=True)
+    os.makedirs("assets", exist_ok=True)
+
+
     # Keep looping until the 'packs' folder is no longer empty
     while len(os.listdir("packs")) == 0:
         # Show dialogue to inform user something is happening
@@ -52,10 +58,6 @@ def main():
 
     # Setup the menubar
     setup_menubar(root)
-
-    # Ensure /packs/ and /saves/ folder exists
-    os.makedirs("packs", exist_ok=True)
-    os.makedirs("saves", exist_ok=True)
 
     # Load the main images through the 'load_images' function
     # which is defined later
