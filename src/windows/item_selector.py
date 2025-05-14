@@ -49,7 +49,7 @@ class ItemSelector(TopLevelWindow):
             item_frame = tk.Frame(frame)
             item_frame.grid(row=i + 1, column=0, columnspan=2)
             # Create a radio button
-            item_radio = tk.Radiobutton(item_frame, text=f"{" ".join(item.split('_')).title()} x{amount}", value=i, variable=selected_item)
+            item_radio = tk.Radiobutton(item_frame, text=f"{' '.join(item.split('_')).title()} x{amount}", value=i, variable=selected_item)
             item_radio.grid(row=0, column=0)
             # Create an image label
             image_label = tk.Label(item_frame, image=images.get_image(f"item_{item.lower()}"))

@@ -1,3 +1,14 @@
+# This file contains a function that will get a random encounter
+# for the specified route
+
+# Imports
+
+import random
+
+from src import holder
+from src.pokemon.pokemon import Pokemon
+
+# Define the routes map
 routes = [
     {
         "common": [
@@ -338,3 +349,32 @@ routes = [
         ]
     }
 ]
+
+# Define a function to get an encounter on a route
+def get_encounter(route: int) -> Pokemon:
+    route -= 1 # Offset since routes are typically first-indexed by 1
+
+    # Chance of 10%
+    if random.random() < 0.1 and route > 0:
+        route -= 1 # Draw a Pokemon one route lower
+    elif random.random() < 0.1 and route != len(routes): # Chance of 9%
+        route += 1 # Draw one route above
+
+    # Initialize variable
+    encounter_set = routes[route]
+
+    # Chance of 20%
+    if random.random() < 0.2:
+        encounter_set = encounter_set['rare'] # Rare encounter
+    else:
+        encounter_set = encounter_set['common'] # Common encounter
+
+    # Get an encounter
+    encounter = random.choice(encounter_set)
+    # Define encounter species name
+    name = encounter['species']
+    # Pick a random level
+    level = random.randint(encounter['min_level'], encounter['max_level'])
+
+    # Return a wild Pokemon
+    return holder.get_species(name).spawn(level)

@@ -5,6 +5,7 @@
 
 import tkinter as tk
 
+from src.game.battle_client import BattleClient
 from src.game.save import Save
 from src.pack_processor import LoadedPack
 from src.pokemon.move import Move
@@ -21,6 +22,10 @@ pack: LoadedPack | None = None
 # Initialize the 'save' variable which will be updated to a loaded save
 # by the main menu so that other modules can access the current save
 save: Save | None = None
+
+# Initialize the 'battle' variable which will be updated to any ongoing
+# battle that the player is in
+battle: BattleClient | None = None
 
 # Define the 'get_species' function that takes a species name and returns
 # a species object

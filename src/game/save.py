@@ -17,6 +17,7 @@ class Save:
             trainer_id: int, # The trainer's numeric ID
             created_at: int, # The timestamp this save was created at
             starter: str, # The starter the trainer has selected
+            route: int, # The route that the player is on
             team: list[Pokemon], # The trainer's team
             box: list[list[Pokemon]], # The trainer's box (Pokemon in storage)
             badges: int, # The amount of badges the trainer has,
@@ -30,6 +31,7 @@ class Save:
         self.trainer_id = trainer_id
         self.created_at = created_at
         self.starter = starter
+        self.route = route
         self.team = team
         self.box = box
         self.badges = badges
@@ -70,6 +72,7 @@ class Save:
             obj["trainer_id"],
             obj["created_at"],
             obj["starter"],
+            obj["route"],
             list(map(lambda entry: Pokemon.from_obj(entry), obj["team"])), # Map each Pokemon from dictionary in the team to a Pokemon object
             list(map(lambda box: list(map(lambda entry: Pokemon.from_obj(entry), box)), obj["box"])), # Map each Pokemon from dictionary in the boxes to a Pokemon object
             obj["badges"],

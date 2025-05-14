@@ -18,7 +18,7 @@ from src.pokemon.types.encounter_type import EncounterType
 from src.pokemon.types.stat import Stat
 
 # Define constants for battle simulation server
-host = "127.0.0.1"
+host = "129.153.58.254"
 port = 3000
 
 # Define an enum to separate the player and an AI opponent
@@ -35,6 +35,7 @@ class BattleEvent(Enum):
     CATCH_FAILURE = "catch_failure" # A failed catch
     TURN_CHANGE = "turn_change" # The turn counter has updated
     PP_UPDATE = "pp_update" # Move PP has been updated
+    CURRENT_POKEMON_UPDATE = "current_pokemon_update" # A Pokemon on the field has been updated
 
 # Define the 'BattleClient' class
 class BattleClient:
@@ -76,8 +77,6 @@ class BattleClient:
         # Add each Pokemon from the opponent's team
         for pokemon in self.opponent:
             self.pokemon[str(pokemon.uuid)] = pokemon
-
-        print(self.pokemon)
 
     # Define the listener callback for the socket
     def __listen(self):
@@ -153,6 +152,27 @@ class BattleClient:
                                 self.__call_event(
                                     BattleEvent.TURN_CHANGE,
                                     current_turn
+                                )
+                            elif action == "switch":
+                                # Split arguments
+                                side = args[2].split(":")[0][1:-1] # Slice a string, ex: abcde -> bcd
+                                # Iterate battlers
+                                for battler in Battler:
+                                    if battler.value == side:
+                                        side = battler
+                                        break
+                                target = self.get_pokemon_by_uuid(args[2])
+
+                                # Check battler and assign current Pokemon
+                                if side == Battler.PLAYER.value:
+                                    self.current = target
+                                elif side == Battler.AI.value:
+                                    self.current_opponent = target
+
+                                # Call the switch Pokemon event
+                                self.__call_event(
+                                    BattleEvent.CURRENT_POKEMON_UPDATE,
+                                    self.current, self.current_opponent
                                 )
                     else:
                         # Print raw message in edge-cases

@@ -177,6 +177,7 @@ class SaveCreator(TopLevelWindow):
                 trainer_id=trainer_id,
                 created_at=timestamp,
                 starter=selected_starter,
+                route=1,
                 team=[starter_pokemon],
                 box=[],
                 badges=0,

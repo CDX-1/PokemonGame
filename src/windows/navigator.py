@@ -10,8 +10,8 @@ from __future__ import annotations
 import tkinter as tk
 
 from src import holder
-from src.game.battle import Battle
-from src.pokemon.species import Species
+from src.game.battle_client import BattleClient
+from src.routes import get_encounter
 from src.pokemon.types.stat import Stat
 from src.utils import images
 from src.utils.font import get_mono_font, get_title_font
@@ -128,16 +128,30 @@ class Navigator:
         title = tk.Label(self.frame, text="Pokemon Game", font=get_title_font())
         title.place(x=width / 2, y=offset, anchor=tk.CENTER)
 
+        # Define a function to check if the current window is focused
+        def is_focused():
+            nonlocal self
+            return self.parent.focus_displayof() is not None
+
         # Define the encounter callback
         def encounter(event):
+            # Require that the window be focused
+            if not is_focused():
+                return # Exit
+
+            # Require that the player not be in a battle
+            if holder.battle is not None:
+                return # Exit
+
             # Initialize a battle instance
-            battle = Battle(
+            battle = BattleClient(
                 holder.save.team,
-                [holder.get_species("mewtwo").spawn(10, None, False, True)],
+                [get_encounter(holder.save.route)],
                 False
             )
+
             # Initialize a battle window
-            BattleWindow(self.parent, battle, lambda: battle.start_battle()).draw().wait()
+            BattleWindow(self.parent, battle).draw().wait()
 
         # Define the Bag callback
         def bag(event):
@@ -212,4 +226,3 @@ class Navigator:
 
         # Return an instance of self
         return self
-

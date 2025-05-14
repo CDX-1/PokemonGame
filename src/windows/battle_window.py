@@ -8,24 +8,24 @@ from typing import Callable
 import time
 
 from src import holder
-from src.game.battle import Battle, BattleEvent
+from src.game.battle_client import BattleClient, BattleEvent
 from src.pokemon.pokemon import Pokemon
 from src.pokemon.types.ball import Ball
 from src.utils import images
 from src.utils.font import get_bold_font
 from src.windows.abstract.TopLevelWindow import TopLevelWindow
 from src.windows.item_selector import ItemSelector
+from src.windows.move_selector import MoveSelector
 
 # Define the 'BattleWindow' class
 class BattleWindow(TopLevelWindow):
-    # Class constructor method takes a 'parent' element such as the Tkinter root, a Battle object, and a ready callback
-    def __init__(self, parent: tk.Wm | tk.Misc, battle: Battle, ready_callback: Callable[[], None]):
+    # Class constructor method takes a 'parent' element such as the Tkinter root and a Battle object
+    def __init__(self, parent: tk.Wm | tk.Misc, battle: BattleClient):
         # Call TopLevelWindow's constructor method
         super().__init__(parent)
 
         # Initialize fields
         self.battle = battle
-        self.ready_callback = ready_callback
 
     # Define the 'draw' method that returns an instance of its self so that the
     # 'factory' API architecture can be used (method-chaining)
@@ -150,11 +150,7 @@ class BattleWindow(TopLevelWindow):
             print("success")
 
         # Attach listener callbacks
-        self.battle.listen(BattleEvent.CURRENT_POKEMON_UPDATE, on_current_pokemon_update)
-        self.battle.listen(BattleEvent.CATCH_START, on_catch_start)
-        self.battle.listen(BattleEvent.CATCH_SHAKE, on_catch_shake)
-        self.battle.listen(BattleEvent.CATCH_FAIL, on_catch_fail)
-        self.battle.listen(BattleEvent.CATCH_SUCCESS, on_catch_success)
+        self.battle.on(BattleEvent.CURRENT_POKEMON_UPDATE, on_current_pokemon_update)
 
         # Create a container frame to center the action frame
         container_frame = tk.Frame(self.window)
@@ -200,7 +196,7 @@ class BattleWindow(TopLevelWindow):
 
         # Create a fight callback
         def fight():
-            pass
+            MoveSelector(self.parent, self.battle.current, lambda a: print(a)).draw().wait()
 
         # Create a catch callback
         def catch():
@@ -249,9 +245,6 @@ class BattleWindow(TopLevelWindow):
         # Configure grid to center the contents
         action_frame.grid_columnconfigure(0, weight=1)
         action_frame.grid_columnconfigure(1, weight=1)
-
-        # Call the ready callback
-        self.ready_callback()
 
         # Return an instance of self
         return self

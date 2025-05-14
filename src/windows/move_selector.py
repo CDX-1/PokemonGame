@@ -14,24 +14,24 @@ from src.windows.abstract.TopLevelWindow import TopLevelWindow
 
 # Define a type-colour map which binds every Pokemon type to a hex code
 type_colors = {
-    "Normal": "#A8A77A",
-    "Fire": "#EE8130",
-    "Water": "#6390F0",
-    "Electric": "#F7D02C",
-    "Grass": "#7AC74C",
-    "Ice": "#96D9D6",
-    "Fighting": "#C22E28",
-    "Poison": "#A33EA1",
-    "Ground": "#E2BF65",
-    "Flying": "#A98FF3",
-    "Psychic": "#F95587",
-    "Bug": "#A6B91A",
-    "Rock": "#B6A136",
-    "Ghost": "#735797",
-    "Dragon": "#6F35FC",
-    "Dark": "#705746",
-    "Steel": "#B7B7CE",
-    "Fairy": "#D685AD"
+    "normal": "#A8A77A",
+    "fire": "#EE8130",
+    "water": "#6390F0",
+    "electric": "#F7D02C",
+    "grass": "#7AC74C",
+    "ice": "#96D9D6",
+    "fighting": "#C22E28",
+    "poison": "#A33EA1",
+    "ground": "#E2BF65",
+    "flying": "#A98FF3",
+    "psychic": "#F95587",
+    "bug": "#A6B91A",
+    "rock": "#B6A136",
+    "ghost": "#735797",
+    "dragon": "#6F35FC",
+    "dark": "#705746",
+    "steel": "#B7B7CE",
+    "fairy": "#D685AD"
 }
 
 # Define the 'MoveSelector' class
@@ -55,26 +55,57 @@ class MoveSelector(TopLevelWindow):
         frame = tk.Frame(self.window)
         frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
-        # Iterate Pokemon's move set
-        for battle_move in self.pokemon.condition.move_set:
+        # Iterate Pokemon's move set, enumerated
+        for i, battle_move in enumerate(self.pokemon.condition.move_set):
+            row = i // 2
+            col = i % 2
+
             # Retrieve move object
             move = holder.get_move(battle_move.name)
 
             # Create a frame for the move
-            move_frame = tk.Frame(frame, width=20, padx=5, pady=5)
-            move_frame.grid(row=0, column=0, sticky=tk.CENTER)
+            move_frame = tk.Frame(frame, padx=10, pady=10, bg=type_colors[move.type])
+            move_frame.grid(row=row, column=col, padx=5, pady=5)
 
             # Add the type icon of the move
-            type_label = tk.Label(move_frame, image=images.get_image(move.type), anchor=tk.CENTER)
-            type_label.grid(row=0, column=0, sticky=tk.CENTER)
+            type_label = tk.Label(move_frame, image=images.get_image(move.type), bg=type_colors[move.type])
+            type_label.grid(row=0, column=0, padx=(0, 5))
 
             # Add the name of the move
-            move_label = tk.Label(move_frame, text=move.name, anchor=tk.CENTER)
-            move_label.grid(row=0, column=1, sticky=tk.CENTER)
+            move_name = " ".join(move.name.split("_")).title()
+            move_label = tk.Label(move_frame, text=move_name, font=get_bold_font(), bg=type_colors[move.type])
+            move_label.grid(row=0, column=1, padx=(0, 10))
 
             # Add the PP label
-            pp_label = tk.Label(move_frame, text=f"{battle_move.pp}/{battle_move.max_pp}", anchor=tk.CENTER)
-            pp_label.grid(row=0, column=2, sticky=tk.CENTER)
+            pp_label = tk.Label(move_frame, text=f"{battle_move.pp}/{battle_move.max_pp}", bg=type_colors[move.type])
+            pp_label.grid(row=0, column=2)
+
+            # Center contents within their cell
+            move_frame.grid_columnconfigure(0, weight=1)
+            move_frame.grid_columnconfigure(1, weight=1)
+            move_frame.grid_columnconfigure(2, weight=1)
+
+            # Add click bindings to all widgets
+            move_frame.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
+            type_label.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
+            move_label.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
+            pp_label.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
+
+        # Add a cancel button
+        cancel_button = tk.Button(frame, text="CANCEL", font=get_bold_font(), width=40, relief=tk.GROOVE, bg="#ececec",
+                                  command=lambda: self.window.destroy())
+        cancel_button.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+
+        # Center the grid in the frame
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_columnconfigure(1, weight=1)
 
         # Return an instance of self
         return self
+
+    # Define the move click callback
+    def on_move_click(self, move_name: str):
+        # Destroy the window
+        self.window.destroy()
+        # Call the callback
+        self.callback(move_name)

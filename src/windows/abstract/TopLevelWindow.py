@@ -36,6 +36,8 @@ class TopLevelWindow:
         self.window.transient(self.parent)
         # Disables all other windows
         self.window.grab_set()
+        # Force the window to be focused
+        self.window.focus_force()
         # Starts a local loop and does not exist until this
         # window is destroyed
         self.window.wait_window()

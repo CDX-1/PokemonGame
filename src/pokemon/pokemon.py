@@ -164,7 +164,7 @@ class Pokemon:
         # Miscellaneous fields
         parts.append(f"{self.friendship},")
         ball = self.capture_data.ball if self.capture_data is not None else Ball.POKE_BALL
-        parts.append(f"{ball.name.replace("_", "")}|,")
+        parts.append(f"{ball.name.replace('_', '')}|,")
         parts.append(",") # Skip hidden power type
         parts.append(",") # Skip GMax factor
         parts.append(",") # Skip Dynamax level
