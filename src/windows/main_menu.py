@@ -11,6 +11,7 @@ import os
 import json
 from typing import Callable
 
+from client_tester import test
 from src import holder
 from src.game.save import Save
 from src.windows.abstract.TopLevelWindow import TopLevelWindow
@@ -37,6 +38,9 @@ class MainMenu:
         # Create a container frame
         container = tk.Frame(self.frame)
         container.pack(fill=tk.BOTH, expand=True)
+
+        # TODO Remove
+        tk.Button(text="test", command=test).pack()
 
         # Add the logo
         TopLevelWindow.create_logo_label(container, scale=(15, 15))

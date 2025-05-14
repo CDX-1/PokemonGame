@@ -4,9 +4,11 @@
 # Imports
 
 from typing import Literal, cast
+import uuid
 
 from src import holder
 from src.pokemon.species import Species
+from src.pokemon.types.ball import Ball
 
 from src.pokemon.types.battle_condition import BattleCondition
 from src.pokemon.types.capture_data import CaptureData
@@ -54,6 +56,9 @@ class Pokemon:
         self.condition = condition
         self.capture_data = capture_data
 
+        # Initialize a UUID
+        self.uuid = uuid.uuid4()
+
     # Define the 'get_species' function which takes the name of the species
     # and uses the holder utility to obtain the actual species object
     def get_species(self) -> Species:
@@ -94,6 +99,79 @@ class Pokemon:
     # Define a get_moves function that returns a list of the Pokemon's move set
     def get_moves(self) -> list[str]:
         return list(map(lambda entry: entry.name, self.condition.move_set))
+
+    # Define a function to convert this Pokemon into a Pokemon-Showdown compatible
+    # string
+    # TODO Test with Nidoran-M and Nidoran-F
+    def pack_string(self):
+        # Initialize and empty array
+        parts = []
+
+        # Append species name
+        parts.append(self.species)
+        parts.append("||") # Append two separators
+
+        # Append Pokemon's UUID
+        parts.append(str(self.uuid) + "|")
+
+        # Append Pokemon's current health
+        parts.append(str(self.condition.health) + "|")
+
+        # TODO Append current status
+        parts.append("|")
+
+        # TODO Apply sleep/freeze
+        parts.append("-1|")
+
+        # TODO Append health item
+        parts.append("|")
+
+        # Append ability
+        parts.append(self.ability.replace("_", "").lower() + "|")
+
+        # Append moves
+        showdown_moves = list(map(lambda move_name: move_name.replace("_", "").lower(), self.get_moves()))
+        parts.append(",".join(showdown_moves) + "|")
+
+        # Append move PPs
+        moves = self.condition.move_set
+        pps = list(map(lambda move: f"{move.pp}/{move.max_pp}", moves))
+        parts.append(",".join(pps) + "|")
+
+        # Append nature
+        parts.append(f"{self.nature.name.lower()}|")
+
+        # Append EVs
+        evs = list(map(lambda stat: str(self.evs[stat.value]), Stat))
+        parts.append(",".join(evs) + "|")
+
+        # Append gender
+        if self.gender in [Gender.MALE, Gender.FEMALE]:
+            parts.append(self.gender.name[0].upper() + "|")
+        else:
+            parts.append("Genderless|")
+
+        # Append IVs
+        ivs = list(map(lambda stat: str(self.ivs[stat.value]), Stat))
+        parts.append(",".join(ivs) + "|")
+
+        # Append shiny-ness
+        parts.append("S|" if self.shiny else "|")
+
+        # Append level
+        parts.append(f"{self.level}|")
+
+        # Miscellaneous fields
+        parts.append(f"{self.friendship},")
+        ball = self.capture_data.ball if self.capture_data is not None else Ball.POKE_BALL
+        parts.append(f"{ball.name.replace("_", "")}|,")
+        parts.append(",") # Skip hidden power type
+        parts.append(",") # Skip GMax factor
+        parts.append(",") # Skip Dynamax level
+        parts.append("normal,") # Use default 'normal' tera type
+
+        # Returned joined parts
+        return "".join(parts)
 
     # Define a static method that takes a dictionary and returns
     # an instance of the Pokemon class

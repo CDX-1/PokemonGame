@@ -168,7 +168,7 @@ class Species:
     # Define a method called 'spawn' that creates a fresh
     # instance of a Pokemon of this species with realistic stats
     # that takes a primitive integer or a range of integers
-    def spawn(self, levels: int | range, capture_data: CaptureData | None, is_egg: bool = False, force_shiny: bool = False):
+    def spawn(self, levels: int | range, capture_data: CaptureData | None = None, is_egg: bool = False, force_shiny: bool = False):
         # Import Pokemon & holder here to avoid circular import error
         from src.pokemon.pokemon import Pokemon
         from src import holder

@@ -25,3 +25,15 @@ class Ball(Enum):
     ULTRA_BALL = BallHandler(lambda ctx: 2) # Good Pokeball, x2
     MASTER_BALL = BallHandler(lambda ctx: 255) # Perfect Pokeball, x255 (100% catch rate)
     QUICK_BALL = BallHandler(lambda ctx: 5 if ctx.turn == 1 else 1) # Quick Ball, x5 on turn 1, otherwise x1
+
+    # Define a static method to access any enumeration object using a string literal
+    @staticmethod
+    def of(value: str):
+        # Iterate all enumerations
+        for entry in Ball:
+            # Check if current enumeration's name or value matches the 'value' argument
+            if entry.name.lower() == value.lower():
+                # Return matching enumeration
+                return entry
+        # Raise a KeyError to indicate invalid 'value' argument
+        raise KeyError(f"Invalid ball: {value}")

@@ -180,6 +180,7 @@ class SaveCreator(TopLevelWindow):
                 team=[starter_pokemon],
                 box=[],
                 badges=0,
+                bag={},
                 yen=300, # Give player 300 yen to start with
                 wins=0,
                 losses=0

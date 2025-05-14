@@ -20,6 +20,7 @@ class Save:
             team: list[Pokemon], # The trainer's team
             box: list[list[Pokemon]], # The trainer's box (Pokemon in storage)
             badges: int, # The amount of badges the trainer has,
+            bag: dict[str, int], # The player's bag/items
             yen: int, # The amount of money the trainer has
             wins: int, # The amount of battles the trainer has won
             losses: int # The amount of battles the trainer has lost
@@ -32,9 +33,22 @@ class Save:
         self.team = team
         self.box = box
         self.badges = badges
+        self.bag = bag
         self.yen = yen
         self.wins = wins
         self.losses = losses
+
+    # Define a function to consume an item from the bag
+    def consume_item(self, item: str, amount: int = 1):
+        # Check if item is in the bag
+        if item in self.bag:
+            # Check if deduction would be less than or equal to 0
+            if self.bag[item] - amount <= 0:
+                # Remove item
+                self.bag.pop(item)
+            else:
+                # Decrease amount
+                self.bag[item] -= amount
 
     # Define the write function which will write this save file to disk
     def write(self):
@@ -59,6 +73,7 @@ class Save:
             list(map(lambda entry: Pokemon.from_obj(entry), obj["team"])), # Map each Pokemon from dictionary in the team to a Pokemon object
             list(map(lambda box: list(map(lambda entry: Pokemon.from_obj(entry), box)), obj["box"])), # Map each Pokemon from dictionary in the boxes to a Pokemon object
             obj["badges"],
+            obj["bag"],
             obj["yen"],
             obj["wins"],
             obj["losses"]

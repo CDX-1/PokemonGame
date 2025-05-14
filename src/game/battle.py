@@ -126,16 +126,23 @@ class Battle:
                     break
                 # Increment shake counter
                 shakes += 1
-            # All 4 shakes passed, catch is successful
-            is_caught = True
-            shakes = 4
+            # Check if ball has shaked four times
+            if shakes == 4:
+                # Mark Pokemon as caught
+                is_caught = True
 
         # Send a catch start event
         self.__call_event(BattleEvent.CATCH_START, ball)
 
-        # Send a catch shake event for each shake
-        for i in range(shakes - 1):
-            holder.root.after((i * 1000) + 1000, lambda: self.__call_event(BattleEvent.CATCH_SHAKE))
+        # Check if we shake at all
+        if shakes - 1 <= 0:
+            print("No shakes")
+            # Set shake to one to delay execution for visual effect but do not send shake event
+            shakes = 1
+        else:
+            # Send a catch shake event for each shake
+            for i in range(shakes - 1):
+                holder.root.after((i * 1000) + 1000, lambda: self.__call_event(BattleEvent.CATCH_SHAKE))
 
         # Define a callback to run after all the shakes have completed
         def callback():
