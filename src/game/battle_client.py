@@ -31,11 +31,11 @@ class BattleEvent(Enum):
     STARTED = "started" # Simulation has started
     MOVE = "move" # A move was used
     STAT_CHANGE = "stat_change" # A Pokemon has had their stats changed
-    CATCH_SUCCESS = "catch_success" # A successful catch
-    CATCH_FAILURE = "catch_failure" # A failed catch
+    CATCH = "catch_success" # A successful or unsuccessful catch
     TURN_CHANGE = "turn_change" # The turn counter has updated
     PP_UPDATE = "pp_update" # Move PP has been updated
     CURRENT_POKEMON_UPDATE = "current_pokemon_update" # A Pokemon on the field has been updated
+    HEALTH_UPDATE = "health_update" # A Pokemon's health has been updated
 
 # Define the 'BattleClient' class
 class BattleClient:
@@ -78,6 +78,9 @@ class BattleClient:
         for pokemon in self.opponent:
             self.pokemon[str(pokemon.uuid)] = pokemon
 
+        # Attach a listener that makes the AI use a move each turn
+        self.on(BattleEvent.TURN_CHANGE, self.ai_use_move)
+
     # Define the listener callback for the socket
     def __listen(self):
         buffer = ""
@@ -108,6 +111,11 @@ class BattleClient:
                         print(f"Loaded battle: {self.battle_id}")
                         # Call STARTED event
                         self.__call_event(BattleEvent.STARTED)
+                        # Send out starting Pokemon
+                        self.__call_event(
+                            BattleEvent.CURRENT_POKEMON_UPDATE,
+                            self.current, self.current_opponent
+                        )
                     elif obj["action"] == "message" and "output" in obj: # Check if this is a 'message' action
                         message = obj["output"]
 
@@ -174,6 +182,23 @@ class BattleClient:
                                     BattleEvent.CURRENT_POKEMON_UPDATE,
                                     self.current, self.current_opponent
                                 )
+
+                                # Split arguments to determine health
+                                raw_health = args[4].split("/")
+                                health = int(raw_health[0])
+                                max_health = int(raw_health[1])
+
+                                # Check if max health matches the Pokemon's health stat
+                                # This is because HP is sent in two formats, current/max and
+                                # current hp percent / 100
+                                if max_health == target.get_stat(Stat.HP):
+                                    # Determine targeted battler
+                                    if target == self.current:
+                                        battler = Battler.PLAYER
+                                    else:
+                                        battler = Battler.AI
+                                    # Call a health update event
+                                    self.__call_event(BattleEvent.HEALTH_UPDATE, battler, health)
                     else:
                         # Print raw message in edge-cases
                         print(obj)
@@ -382,11 +407,21 @@ class BattleClient:
             # Catch is successful if four shakes were passed
             is_success = shakes == 4
 
-        # Declare the event type depending on whether the catch was successful or not
-        event_type = BattleEvent.CATCH_SUCCESS if is_success else BattleEvent.CATCH_FAILURE
-
         # Call the event
-        self.__call_event(event_type, is_success, shakes - 1 if shakes > 0 else shakes)
+        self.__call_event(BattleEvent.CATCH, is_success, ball, shakes - 1 if shakes > 0 else shakes)
+
+        # Send command
+        if is_success:
+            # Send a capture command
+            self.__send_command(f">capture p{Battler.AI.value}a")
+        else:
+            # Send a pass command
+            self.__send_command(f">p{Battler.PLAYER.value} pass")
+
+    # Define a function to make the AI use a move
+    def ai_use_move(self, _: int):
+        # TODO Implement logical move choice
+        self.select_move(Battler.AI, 1)
 
     # Define a function to disconnect the socket
     def disconnect(self):

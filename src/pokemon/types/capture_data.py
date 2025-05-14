@@ -19,3 +19,12 @@ class CaptureData:
         self.ball = ball
         self.original_trainer = original_trainer
         self.original_trainer_id = original_trainer_id
+
+    # Define a static 'of' function that will convert a bland dictionary to an instance of this object
+    @staticmethod
+    def of(obj):
+        return CaptureData(
+            Ball.of(obj["ball"]),
+            obj["original_trainer"],
+            obj["original_trainer_id"]
+        )

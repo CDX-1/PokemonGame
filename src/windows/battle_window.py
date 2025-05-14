@@ -8,11 +8,11 @@ from typing import Callable
 import time
 
 from src import holder
-from src.game.battle_client import BattleClient, BattleEvent
+from src.game.battle_client import BattleClient, BattleEvent, Battler
 from src.pokemon.pokemon import Pokemon
 from src.pokemon.types.ball import Ball
 from src.utils import images
-from src.utils.font import get_bold_font
+from src.utils.font import get_bold_font, get_mono_font
 from src.windows.abstract.TopLevelWindow import TopLevelWindow
 from src.windows.item_selector import ItemSelector
 from src.windows.move_selector import MoveSelector
@@ -26,6 +26,36 @@ class BattleWindow(TopLevelWindow):
 
         # Initialize fields
         self.battle = battle
+        self.buttons = []
+        self.child_windows = []
+
+    # Create a function to lock the buttons
+    def lock(self):
+        # Iterate each button
+        for button_data in self.buttons:
+            # Spread the button data
+            button, callback = button_data
+            # Override the command
+            button.configure(command=lambda: print("Locked"))
+
+        # Iterate each child window
+        for window in self.child_windows:
+            # Ensure window has not already been destroyed
+            if window is not None:
+                # Destroy the window
+                window.destroy()
+
+        # Empty the list
+        self.child_windows.clear()
+
+    # Create a function to unlock the buttons
+    def unlock(self):
+        # Iterate each button with their callbacks
+        for button_data in self.buttons:
+            # Spread tuple
+            button, callback = button_data
+            # Override the command
+            button.configure(command=callback)
 
     # Define the 'draw' method that returns an instance of its self so that the
     # 'factory' API architecture can be used (method-chaining)
@@ -48,109 +78,6 @@ class BattleWindow(TopLevelWindow):
         # Create a battle frame
         battle_frame = tk.Frame(self.window)
         battle_frame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
-
-        # Define current pokemon update event callback
-        def on_current_pokemon_update(current: Pokemon, opponent: Pokemon):
-            # Declare nonlocal variables
-            nonlocal current_pokemon_image, current_opponent_image, current_pokemon_label, current_opponent_label
-
-            # Destroy Pokemon label or Opponent label if existing
-            for widget in [current_pokemon_image, current_opponent_image, current_pokemon_label,
-                           current_opponent_label]:
-                if widget is not None:
-                    widget.destroy()
-
-            # Create Pokemon and Opponent labels
-
-            current_pokemon_image = tk.Label(battle_frame, image=current.get_sprite("back"))
-            current_pokemon_image.place(relx=0.05, rely=0.9175, anchor=tk.SW)
-
-            current_pokemon_label = tk.Label(battle_frame, text=f"{current.nickname}\tLv. {current.level}", width=20,
-                                             anchor=tk.W)
-            current_pokemon_label.place(relx=0.035, rely=1, anchor=tk.SW)
-
-            current_opponent_image = tk.Label(battle_frame, image=opponent.get_sprite("front"))
-            current_opponent_image.place(relx=0.95, rely=0.135, anchor=tk.NE)
-
-            current_opponent_label = tk.Label(battle_frame, text=f"{opponent.nickname}\tLv. {opponent.level}", width=20,
-                                              anchor=tk.E)
-            current_opponent_label.place(relx=0.975, rely=0.025, anchor=tk.NE)
-
-            # Iterate each label
-            for pkm, label in [(current, current_pokemon_label), (opponent, current_opponent_label)]:
-                # Check if Pokemon is shiny
-                if pkm.shiny:
-                    # Update text in label
-                    label.config(text="✨ " + label.cget("text"))
-
-        # Define a catch start event callback
-        def on_catch_start(ball: Ball):
-            print("start")
-            # Declare nonlocal variables
-            nonlocal current_opponent_image, poke_ball_image, poke_ball_original_x
-
-            if current_opponent_image is None:
-                print("Received catch start event before an opponent image was drawn")
-                return  # Should never happen, exit
-
-            # Create a label for the poke ball and destroy the current opponent image
-            poke_ball_image = tk.Label(battle_frame, image=images.get_image(f"item_{ball.name.lower()}"))
-            poke_ball_image.place(x=340, y=50, anchor=tk.NE)
-
-            # Store the original position immediately after placement
-            poke_ball_original_x = 350
-
-            # Destroy opponent image
-            current_opponent_image.destroy()
-            current_opponent_image = None
-
-        # Define a catch shake event callback
-        def on_catch_shake():
-            print("shake")
-            # Declare nonlocal variables
-            nonlocal poke_ball_image, poke_ball_original_x
-
-            # Define the shake animation with proper scheduling
-            def _shake(count=0, direction=2):
-                # Move the ball in the current direction
-                poke_ball_image.place(x=poke_ball_original_x + direction, y=poke_ball_image.winfo_y())
-
-                count += 1
-                # If we've completed the animation, reset to original position
-                if count >= 6:  # 3 full shakes
-                    poke_ball_image.place(x=poke_ball_original_x, y=poke_ball_image.winfo_y())
-                    return
-
-                # Schedule the next frame with reversed direction
-                self.window.after(50, lambda: _shake(count, -direction))
-
-            # Start the shake animation
-            _shake()
-
-        # Define a catch fail event callback
-        def on_catch_fail():
-            print("fail")
-            # Declare nonlocal variables
-            nonlocal current_opponent_image, poke_ball_image, last_catch_attempt
-
-            # First destroy the poke ball image
-            if poke_ball_image is not None:
-                poke_ball_image.destroy()
-                poke_ball_image = None
-
-            # Then recreate the opponent image
-            current_opponent_image = tk.Label(battle_frame, image=self.battle.current_opponent.get_sprite("front"))
-            current_opponent_image.place(relx=0.95, rely=0.135, anchor=tk.NE)
-
-            # Update last_catch_attempt
-            last_catch_attempt = time.time()
-
-        # Define a catch success event callback
-        def on_catch_success():
-            print("success")
-
-        # Attach listener callbacks
-        self.battle.on(BattleEvent.CURRENT_POKEMON_UPDATE, on_current_pokemon_update)
 
         # Create a container frame to center the action frame
         container_frame = tk.Frame(self.window)
@@ -193,10 +120,23 @@ class BattleWindow(TopLevelWindow):
             button.grid(row=row, column=col, padx=5, pady=5)
             # Put key and callback in keyed-callback map
             keyed_callbacks[key] = callback
+            # Return the button
+            return button
 
         # Create a fight callback
         def fight():
-            MoveSelector(self.parent, self.battle.current, lambda a: print(a)).draw().wait()
+            # Define a move selection callback
+            def on_move_select(move):
+                # Lock buttons
+                self.lock()
+                # Select the move
+                self.battle.select_move(Battler.PLAYER, move)
+            # Create window
+            window = MoveSelector(self.parent, self.battle.current, on_move_select)
+            # Append to children
+            self.child_windows.append(window.window)
+            # Show window
+            window.draw().wait()
 
         # Create a catch callback
         def catch():
@@ -226,7 +166,11 @@ class BattleWindow(TopLevelWindow):
                 self.battle.catch(ball)
 
             # Create an item selector instance
-            ItemSelector(self.parent, on_select).draw().wait()
+            window = ItemSelector(self.parent, on_select)
+            # Append the window
+            self.child_windows.append(window.window)
+            # Show window
+            window.draw().wait()
 
         # Create a Pokemon callback
         def pokemon():
@@ -245,6 +189,206 @@ class BattleWindow(TopLevelWindow):
         # Configure grid to center the contents
         action_frame.grid_columnconfigure(0, weight=1)
         action_frame.grid_columnconfigure(1, weight=1)
+
+        # Create a label that will overlay the battle action frame to show messages
+        log_label = tk.Label(action_frame, text="", font=get_mono_font(12), wraplength=380,
+                             anchor=tk.NW, justify=tk.LEFT,bg="#f0f0f0")
+        # Initialize a variable
+        is_logging = False
+        log_queue = []
+
+        # Define a function that will show a message on the battle menu
+        def log(message: str, expire: int = 1000):
+            # Declare nonlocals
+            nonlocal is_logging, log_queue
+
+            # Add the message to the queue
+            log_queue.append((message, expire))
+
+            # Check if we're currently logging
+            if is_logging:
+                return # Exit
+
+            # Define a function to process the next message in the queue
+            def process_next_message():
+                # Declare nonlocals
+                nonlocal is_logging, log_queue
+
+                # Check if there is another message
+                if log_queue:
+                    # Pop the next message from the queue
+                    current_message, current_expire = log_queue.pop(0)
+                    is_logging = True
+
+                    # Place the label on screen before starting animation
+                    log_label.place(relx=0, rely=0, relwidth=1, relheight=1)
+                    log_label.config(text="")  # Clear previous text
+
+                    # Iterate each character in the message, enumerated
+                    for i, char in enumerate(current_message):
+                        self.window.after(i * 10, lambda j=i: log_label.config(text=current_message[:j + 1]))
+
+                    # Define the expiry callback
+                    def on_expire():
+                        # Declare nonlocals
+                        nonlocal is_logging
+                        # Unplace the label
+                        log_label.place_forget()
+                        # Switch is_logging to False
+                        is_logging = False
+
+                        # After the message expires, process the next message
+                        self.window.after(0, process_next_message)
+
+                    # Schedule the expiry
+                    self.window.after(len(current_message) * 10 + current_expire, on_expire)
+
+            # Start processing the first message if not already doing so
+            if not is_logging:
+                process_next_message()
+
+        # Define the ready callback
+        def on_start():
+            self.battle.start()
+            self.battle.send_teams()
+            self.battle.send_layouts()
+
+        # Define a turn change callback
+        def on_turn_change(turn):
+            # Ensure buttons are unlocked
+            self.unlock()
+
+        # Define a health update callback
+        def on_health_update(battler: Battler, health: int):
+            print(f"{battler.name} health updated {int}")
+
+        # Define current pokemon update event callback
+        def on_current_pokemon_update(current: Pokemon, opponent: Pokemon):
+            # Declare nonlocal variables
+            nonlocal current_pokemon_image, current_opponent_image, current_pokemon_label, current_opponent_label
+
+            # Destroy Pokemon label or Opponent label if existing
+            for widget in [current_pokemon_image, current_opponent_image, current_pokemon_label,
+                           current_opponent_label]:
+                if widget is not None:
+                    widget.destroy()
+
+            # Create Pokemon and Opponent labels
+
+            current_pokemon_image = tk.Label(battle_frame, image=current.get_sprite("back"))
+            current_pokemon_image.place(relx=0.05, rely=0.9175, anchor=tk.SW)
+
+            current_pokemon_label = tk.Label(battle_frame, text=f"{current.nickname}\tLv. {current.level}", width=20,
+                                             anchor=tk.W)
+            current_pokemon_label.place(relx=0.035, rely=1, anchor=tk.SW)
+
+            current_opponent_image = tk.Label(battle_frame, image=opponent.get_sprite("front"))
+            current_opponent_image.place(relx=0.95, rely=0.135, anchor=tk.NE)
+
+            current_opponent_label = tk.Label(battle_frame, text=f"{opponent.nickname}\tLv. {opponent.level}", width=20,
+                                              anchor=tk.E)
+            current_opponent_label.place(relx=0.975, rely=0.025, anchor=tk.NE)
+
+            # Iterate each label
+            for pkm, label in [(current, current_pokemon_label), (opponent, current_opponent_label)]:
+                # Check if Pokemon is shiny
+                if pkm.shiny:
+                    # Update text in label
+                    label.config(text="✨ " + label.cget("text"))
+
+        # Define a utility function to replace the opponent image with a Pokeball
+        def start_catch_effect(ball: Ball):
+            # Declare nonlocal variables
+            nonlocal current_opponent_image, poke_ball_image, poke_ball_original_x
+
+            # Lock actions
+            self.lock()
+
+            if current_opponent_image is None:
+                print("Received catch start event before an opponent image was drawn")
+                return  # Should never happen, exit
+
+            # Create a label for the poke ball and destroy the current opponent image
+            poke_ball_image = tk.Label(battle_frame, image=images.get_image(f"item_{ball.name.lower()}"))
+            poke_ball_image.place(x=340, y=50, anchor=tk.NE)
+
+            # Store the original position immediately after placement
+            poke_ball_original_x = 350
+
+            # Destroy opponent image
+            current_opponent_image.destroy()
+            current_opponent_image = None
+
+        # Define utility function to make the Pokeball image shake
+        def shake_pokeball(count=0, direction=2):
+            # Declare nonlocal variables
+            nonlocal poke_ball_image, poke_ball_original_x
+            # Move the ball in the current direction
+            poke_ball_image.place(x=poke_ball_original_x + direction, y=poke_ball_image.winfo_y())
+
+            count += 1
+            # If we've completed the animation, reset to original position
+            if count >= 6:  # 3 full shakes
+                poke_ball_image.place(x=poke_ball_original_x, y=poke_ball_image.winfo_y())
+                return
+
+            # Schedule the next frame with reversed direction
+            self.window.after(50, lambda: shake_pokeball(count, -direction))
+
+        # Define a catch event callback
+        def on_catch(is_success: bool, ball: Ball, shakes: int):
+            # Log the event
+            log(f"Threw a {' '.join(ball.name.split('_')).lower().title()}")
+            # Call the start catch effect function
+            start_catch_effect(ball)
+            # Shake 'shake' many times
+            for i in range(shakes):
+                self.window.after(i * 1000 + 500, shake_pokeball)
+
+            # Define a function to be called after the shakes
+            def after():
+                # Declare nonlocal variables
+                nonlocal current_opponent_image, poke_ball_image
+                # Check if catch is successful
+                if is_success:
+                    # Log the event
+                    log(f"{self.battle.current_opponent.nickname} was caught!")
+                else:
+                    # First destroy the poke ball image
+                    if poke_ball_image is not None:
+                        poke_ball_image.destroy()
+                        poke_ball_image = None
+
+                    # Then recreate the opponent image
+                    current_opponent_image = tk.Label(battle_frame,
+                                                      image=self.battle.current_opponent.get_sprite("front"))
+                    current_opponent_image.place(relx=0.95, rely=0.135, anchor=tk.NE)
+
+                    # Unlock actions
+                    self.unlock()
+
+                    # Log the event
+                    log(f"{self.battle.current_opponent.nickname} broke free!")
+
+            # After all shakes
+            self.window.after(shakes * 1000 + 1000, after)
+
+        # Define a move event callback
+        def on_move(user: Pokemon, move: str, target: Pokemon, miss: bool, still: bool):
+            # Log events
+            log(f"{user.nickname} used {move} on {target.nickname}")
+            if miss:
+                log(f"{self.battle.current_opponent.nickname} missed!")
+
+        # Attach listener callbacks
+        self.battle.on(BattleEvent.STARTED, on_start)
+        self.battle.on(BattleEvent.HEALTH_UPDATE, on_health_update)
+        self.battle.on(BattleEvent.CURRENT_POKEMON_UPDATE, on_current_pokemon_update)
+        self.battle.on(BattleEvent.CATCH, on_catch)
+        self.battle.on(BattleEvent.MOVE, on_move)
+
+        # Start the battle
+        self.battle.create()
 
         # Return an instance of self
         return self

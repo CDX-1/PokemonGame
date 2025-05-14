@@ -193,5 +193,5 @@ class Pokemon:
             obj["experience"],
             obj["friendship"],
             BattleCondition.of(obj["condition"]),
-            cast(CaptureData, obj["capture_data"]),
+            CaptureData.of(obj["capture_data"])
         )
