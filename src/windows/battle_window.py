@@ -1,11 +1,12 @@
 # This file defines a window that serves as the visual representation
 # of a Pokemon battle
-import math
+
 # Imports
 
 import tkinter as tk
 from tkinter import messagebox
 from typing import Callable
+import math
 import time
 
 from src import holder
@@ -205,7 +206,10 @@ class BattleWindow(TopLevelWindow):
 
     # Create a run callback
     def run(self):
-        pass
+        # Log events
+        self.log("You have fled the battle!")
+        # Delegate to the destroy function
+        self.destroy()
 
     # Define a function that will show a message on the battle menu
     def log(self, message: str, expire: int = 1000):
@@ -509,8 +513,8 @@ class BattleWindow(TopLevelWindow):
             # Prompt the player to select their next Pokemon
             PokemonSelector(self.window, self.battle.current, on_select, False).draw().wait()
 
-        # Schedule the after function 1 second later
-        self.window.after(1000, after)
+        # Schedule the after function 4 seconds later
+        self.window.after(4000, after)
 
     # Define the end event callback
     def on_end(self, won: bool):

@@ -16,8 +16,10 @@ from src.routes import get_encounter
 from src.pokemon.types.stat import Stat
 from src.utils import images
 from src.utils.font import get_mono_font, get_title_font
+from src.windows.bag_window import BagWindow
 from src.windows.battle_window import BattleWindow
 from src.windows.overview import Overview
+from src.windows.shop_window import ShopWindow
 
 # Define the 'Navigator' class
 class Navigator:
@@ -177,7 +179,8 @@ class Navigator:
 
         # Define the Bag callback
         def bag(event):
-            print("bag")
+            # Initialize the bag window and show it
+            BagWindow(self.parent).draw().wait()
 
         # Define the box callback
         def box(event):
@@ -185,7 +188,8 @@ class Navigator:
 
         # Define the shop callback
         def shop(event):
-            print("shop")
+            # Create an instance of the shop window and show it
+            ShopWindow(self.parent).draw().wait()
 
         # Create the encounter button
         encounter_button = tk.Label(self.frame, image=images.get_image("encounter", scale))

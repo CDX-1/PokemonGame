@@ -116,7 +116,7 @@ class Species:
                 regular=obj["abilities"]["regular"],
                 hidden=obj["abilities"]["hidden"],
             ),
-            evolutions=list(map(lambda entry: cast(entry, Evolution), obj["evolutions"])), # Cast each sub-dictionary to an Evolution
+            evolutions=obj["evolutions"], # Cast each sub-dictionary to an Evolution
             height=obj["height"],
             weight=obj["weight"],
             ev_yield=cast(OptionalStatTable, obj["ev_yield"]), # Cast the sub-dictionary to an OptionalStatTable

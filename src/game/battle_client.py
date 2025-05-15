@@ -15,7 +15,6 @@ from src.pokemon.pokemon import Pokemon
 from src.pokemon.types.ball import Ball
 from src.pokemon.types.catch_context import CatchContext
 from src.pokemon.types.encounter_type import EncounterType
-from src.pokemon.types.stat import Stat
 
 # Define constants for battle simulation server
 host = "129.153.58.254"
@@ -127,7 +126,7 @@ class BattleClient:
         while True:
             try:
                 data = self.socket.recv(4096)
-            except ConnectionAbortedError: # Socket has been closed
+            except Exception: # Socket has been closed
                 break # Break out of the loop
             if not data:
                 break

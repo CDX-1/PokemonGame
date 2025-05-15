@@ -184,6 +184,8 @@ class Pokemon:
     # Define a function to appropriately add experience to a Pokemon
     # Returns a true if the Pokemon has leveled up
     def add_exp(self, amount: int) -> bool:
+        # Import in the function to avoid circular importing
+        from src.windows.evolution_window import EvolutionWindow
         # Check if Pokemon is at the max level
         if self.level >= MAX_LEVEL:
             return False # Exit
@@ -210,6 +212,20 @@ class Pokemon:
                 # Increment Pokemon's experience
                 self.experience += int(amount)
                 amount = 0
+
+            # Check if the Pokemon can evolve
+            for evo in self.get_species().evolutions:
+                # Check if this evolution is through level up
+                method = evo["method"]
+                if method["name"] == "levelup":
+                    level = method["parameter"]
+                    if self.level >= level:
+                        # Create an evolution window
+                        should_continue = EvolutionWindow(holder.root, self, holder.get_species(evo["name"])).draw()
+                        # Check if should continue is not none indicating that the player has confirmed the evolution
+                        if should_continue is not None:
+                            should_continue.wait() # Show the window
+                            break # Break out of the loop
 
         # Return whether a level up has been triggered
         return has_leveled_up
