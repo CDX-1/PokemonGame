@@ -11,32 +11,11 @@ from src.pokemon.pokemon import Pokemon
 from src.utils import images
 from src.utils.font import get_bold_font
 from src.windows.abstract.TopLevelWindow import TopLevelWindow
-
-# Define a type-colour map which binds every Pokemon type to a hex code
-type_colors = {
-    "normal": "#A8A77A",
-    "fire": "#EE8130",
-    "water": "#6390F0",
-    "electric": "#F7D02C",
-    "grass": "#7AC74C",
-    "ice": "#96D9D6",
-    "fighting": "#C22E28",
-    "poison": "#A33EA1",
-    "ground": "#E2BF65",
-    "flying": "#A98FF3",
-    "psychic": "#F95587",
-    "bug": "#A6B91A",
-    "rock": "#B6A136",
-    "ghost": "#735797",
-    "dragon": "#6F35FC",
-    "dark": "#705746",
-    "steel": "#B7B7CE",
-    "fairy": "#D685AD"
-}
+from src.resources import type_colors
 
 # Define the 'MoveSelector' class
 class MoveSelector(TopLevelWindow):
-    # Class constructor method takes a 'parent' element such as the Tkinter root, a Pokemon, and a ready callback
+    # Class constructor method takes a 'parent' element such as the Tkinter root, a Pokemon, and a callback
     def __init__(self, parent: tk.Wm | tk.Misc, pokemon: Pokemon, callback: Callable[[str], None]):
         # Call TopLevelWindow's constructor method
         super().__init__(parent)
@@ -63,21 +42,24 @@ class MoveSelector(TopLevelWindow):
             # Retrieve move object
             move = holder.get_move(battle_move.name)
 
+            # Set the colour
+            color = type_colors[move.type] if battle_move.pp > 0 else "#6b6b6b"
+
             # Create a frame for the move
-            move_frame = tk.Frame(frame, padx=10, pady=10, bg=type_colors[move.type])
+            move_frame = tk.Frame(frame, padx=10, pady=10, bg=color)
             move_frame.grid(row=row, column=col, padx=5, pady=5)
 
             # Add the type icon of the move
-            type_label = tk.Label(move_frame, image=images.get_image(move.type), bg=type_colors[move.type])
+            type_label = tk.Label(move_frame, image=images.get_image(move.type), bg=color)
             type_label.grid(row=0, column=0, padx=(0, 5))
 
             # Add the name of the move
             move_name = " ".join(move.name.split("_")).title()
-            move_label = tk.Label(move_frame, text=move_name, font=get_bold_font(), bg=type_colors[move.type])
+            move_label = tk.Label(move_frame, text=move_name, font=get_bold_font(), bg=color)
             move_label.grid(row=0, column=1, padx=(0, 10))
 
             # Add the PP label
-            pp_label = tk.Label(move_frame, text=f"{battle_move.pp}/{battle_move.max_pp}", bg=type_colors[move.type])
+            pp_label = tk.Label(move_frame, text=f"{battle_move.pp}/{battle_move.max_pp}", bg=color)
             pp_label.grid(row=0, column=2)
 
             # Center contents within their cell
@@ -85,11 +67,13 @@ class MoveSelector(TopLevelWindow):
             move_frame.grid_columnconfigure(1, weight=1)
             move_frame.grid_columnconfigure(2, weight=1)
 
-            # Add click bindings to all widgets
-            move_frame.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
-            type_label.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
-            move_label.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
-            pp_label.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
+            # Check if move's PP is above 0
+            if battle_move.pp > 0:
+                # Add click bindings to all widgets
+                move_frame.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
+                type_label.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
+                move_label.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
+                pp_label.bind("<Button-1>", lambda e, name=battle_move.name: self.on_move_click(name))
 
         # Add a cancel button
         cancel_button = tk.Button(frame, text="CANCEL", font=get_bold_font(), width=40, relief=tk.GROOVE, bg="#ececec",

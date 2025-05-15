@@ -83,7 +83,7 @@ class Pokemon:
     # Using Generation III formula
     def get_stat(self, stat: Stat) -> int:
         if stat == Stat.HP: # Health uses a different formula
-            return int(((2 * self.get_species().base_stats[stat.value] + self.ivs[stat.value] + (self.evs[stat.value] / 4) * self.level) / 100) + self.level + 10)
+            return int(((2 * self.get_species().base_stats[stat.value] + self.ivs[stat.value] + self.evs[stat.value] // 4) * self.level) / 100) + self.level + 10
         else:
             # Initialize nature_modifier as 1
             nature_modifier = 1
@@ -94,11 +94,19 @@ class Pokemon:
             elif stat == decreases:
                 nature_modifier = 0.9
             # Return calculated value of stat
-            return int((((2 * self.get_species().base_stats[stat.value] + self.ivs[stat.value] + (self.evs[stat.value] / 4)) / 100) * self.level + 5) * nature_modifier)
+            return int((((2 * self.get_species().base_stats[stat.value] + self.ivs[stat.value] + self.evs[stat.value] // 4) * self.level) / 100 + 5) * nature_modifier)
 
     # Define a get_moves function that returns a list of the Pokemon's move set
     def get_moves(self) -> list[str]:
         return list(map(lambda entry: entry.name, self.condition.move_set))
+
+    # Define a function to get the Pokemon's max health
+    def get_max_health(self):
+        return self.get_stat(Stat.HP)
+
+    # Define a function to get the Pokemon's health
+    def get_health(self):
+        return self.condition.health
 
     # Define a function to convert this Pokemon into a Pokemon-Showdown compatible
     # string
@@ -172,6 +180,39 @@ class Pokemon:
 
         # Returned joined parts
         return "".join(parts)
+
+    # Define a function to appropriately add experience to a Pokemon
+    # Returns a true if the Pokemon has leveled up
+    def add_exp(self, amount: int) -> bool:
+        # Check if Pokemon is at the max level
+        if self.level >= MAX_LEVEL:
+            return False # Exit
+
+        # Initialize the has leveled up flag
+        has_leveled_up = False
+
+        # Loop until there's no more EXP to give
+        while amount > 0:
+            exp = self.experience
+            # Calculate the EXP needed to level up
+            exp_needed = self.get_level_up_experience() - exp
+            # Check if adding 'amount' will trigger a level up
+            if amount > exp_needed:
+                # Deduct exp needed from the total amount
+                amount -= exp_needed
+                # Increase the Pokemon's level
+                self.level += 1
+                has_leveled_up = True
+                # Check if the Pokemon is now at the max level
+                if self.level >= MAX_LEVEL:
+                    break # Break out of the loop
+            else:
+                # Increment Pokemon's experience
+                self.experience += int(amount)
+                amount = 0
+
+        # Return whether a level up has been triggered
+        return has_leveled_up
 
     # Define a static method that takes a dictionary and returns
     # an instance of the Pokemon class

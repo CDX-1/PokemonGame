@@ -4,13 +4,15 @@
 # Imports
 
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, scrolledtext
 
 import os
 import platform
 import subprocess
 
 import src.resources as resources
+from src import holder
+from src.game.battle_client import BattleEvent, BattleClient
 from src.utils.font import get_bold_font
 from src.windows.abstract.TopLevelWindow import TopLevelWindow
 
@@ -114,6 +116,81 @@ def config():
     update_button = tk.Button(frame, text="Update", command=update)
     update_button.pack()
 
+# Debug battle callback
+def debug_battle():
+    # Create a top level window
+    window = TopLevelWindow.create_basic_window("Battle Logs", width=1000, height=500)
+
+    def render(battle: BattleClient):
+        nonlocal window
+        # Destroy the window
+        window.destroy()
+
+        # Create a top level window
+        window = TopLevelWindow.create_basic_window("Battle Logs", width=1000, height=500)
+
+        # Create a frame to hold logs and scrollbar
+        log_frame = tk.Frame(window)
+        log_frame.pack(fill=tk.BOTH, expand=True)
+
+        # ScrolledText widget for battle logs
+        log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD, state=tk.DISABLED)
+        log_text.pack(fill=tk.BOTH, expand=True)
+
+        # Frame for input and send button
+        input_frame = tk.Frame(window)
+        input_frame.pack(fill=tk.X)
+
+        # Entry widget for commands
+        cmd_entry = tk.Entry(input_frame)
+        cmd_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0), pady=5)
+
+        # A function to send commands
+        def send_command(cmd, entry_widget):
+            # Send the command
+            battle.send_command_unsafe(cmd)
+            # Clear entry after sending
+            entry_widget.delete(0, tk.END)
+
+        # A function to append messages to the log
+        def append_msg(message):
+            # Enable, insert message, then disable to make read-only
+            log_text.config(state=tk.NORMAL)
+            log_text.insert(tk.END, message + "\n")
+            log_text.see(tk.END)  # scroll to end
+            log_text.config(state=tk.DISABLED)
+
+        # Send button
+        send_btn = tk.Button(input_frame, text="Send",
+                             command=lambda: send_command(cmd_entry.get(), cmd_entry))
+        send_btn.pack(side=tk.RIGHT, padx=5, pady=5)
+
+        # Load existing logs
+        for message in battle.logs:
+            append_msg(message)
+
+        # Listen for new messages
+        battle.on(BattleEvent.LOG, append_msg)
+
+    # Check if there is an active battle
+    if holder.battle is None:
+        # Placeholder label if no battle
+        no_battle_label = tk.Label(window, text="No active battle. Re-open window to load new battles.", wraplength=400)
+        no_battle_label.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+        # Callback to wait for a battle
+        def check_for_battle(found_callback):
+            if holder.battle is not None:
+                no_battle_label.destroy()
+                found_callback(holder.battle)
+            else:
+                holder.root.after(500, lambda: check_for_battle(found_callback))
+
+        # Start polling
+        check_for_battle(render)
+    else:
+        render(holder.battle)
+
 # Define the 'setup_menubar' function that takes a parent
 def setup_menubar(parent: tk.Tk):
     # Create menubar
@@ -137,3 +214,9 @@ def setup_menubar(parent: tk.Tk):
     menubar.add_cascade(label="Cheats", menu=cheats_tab)
     # Add config button
     cheats_tab.add_command(label="Config", command=config)
+
+    # Create 'Debug' tab
+    debug_tab = tk.Menu(menubar, tearoff=False)
+    menubar.add_cascade(label="Debug", menu=debug_tab)
+    # Add a battle console button
+    debug_tab.add_command(label="Open Battle Console", command=debug_battle)

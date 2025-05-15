@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+from tkinter import messagebox
 
 from src import holder
 from src.game.battle_client import BattleClient
@@ -30,6 +31,10 @@ class Navigator:
     # Define the 'draw' method that will create the frame and returns an instance of its
     # self so that the 'factory' API architecture can be used (method-chaining)
     def draw(self) -> Navigator:
+        # Check if the frame is not none
+        if self.frame is not None:
+            self.frame.destroy() # Destroy the frame
+
         # Initialize the frame
         self.frame = tk.Frame(self.parent)
         self.frame.pack(fill=tk.BOTH, expand=True)
@@ -113,6 +118,10 @@ class Navigator:
                     # Create a stat value label
                     stat_label = tk.Label(stat_frame, text=stat_value)
                     stat_label.pack(padx=5, side=tk.LEFT)
+                    # Check if the current stat is HP
+                    if stat == Stat.HP:
+                        # Update stat value label to be current hp / max hp
+                        stat_label.config(text=f"{pokemon.get_health()}/{stat_label.cget('text')}")
 
         # Call the draw_team_frame function
         draw_team_frame()
@@ -143,15 +152,28 @@ class Navigator:
             if holder.battle is not None:
                 return # Exit
 
+            # Ensure player has at least one healthy Pokemon
+            has_any_health = False # Sentinel value
+            for pokemon in save.team:
+                if pokemon.condition.health > 0:
+                    has_any_health = True
+                    break
+
+            if not has_any_health:
+                # Tell player to heal their team
+                messagebox.showinfo("Can't Battle!", "You must heal your Pokemon first! You can heal " +\
+                                    "your Pokemon at the shop!")
+                return # Exit
+
             # Initialize a battle instance
-            battle = BattleClient(
+            holder.battle = BattleClient(
                 holder.save.team,
                 [get_encounter(holder.save.route)],
                 False
             )
 
             # Initialize a battle window
-            BattleWindow(self.parent, battle).draw().wait()
+            BattleWindow(self.parent, holder.battle, self.draw).draw().wait()
 
         # Define the Bag callback
         def bag(event):

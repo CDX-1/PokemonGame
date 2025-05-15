@@ -36,6 +36,14 @@ class BattleEvent(Enum):
     PP_UPDATE = "pp_update" # Move PP has been updated
     CURRENT_POKEMON_UPDATE = "current_pokemon_update" # A Pokemon on the field has been updated
     HEALTH_UPDATE = "health_update" # A Pokemon's health has been updated
+    CRITICAL_HIT = "critical_hit" # A move landed a critical hit
+    SUPER_EFFECTIVE = "super_effective" # A move was super effective
+    RESISTED = "resisted" # A move was resisted
+    IMMUNE = "immune" # A move did no damage
+    FAINTED = "fainted" # A Pokemon has fainted
+    END = "end" # The battle has ended
+
+    LOG = "log" # A message was sent or received
 
 # Define the 'BattleClient' class
 class BattleClient:
@@ -47,7 +55,14 @@ class BattleClient:
         self.player = player
         self.opponent = opponent
 
-        self.current = self.player[0]
+        self.current = list(filter(lambda entry: entry.condition.health > 0, player))[0] # Player's first healthy Pokemon
+        # Modify the player list so that the current Pokemon is first in the list
+        self.player = self.player.copy()
+        current_first = self.player[0]
+        next_current_index = self.player.index(self.current)
+        self.player[0] = self.current
+        self.player[next_current_index] = current_first
+
         self.current_opponent = self.opponent[0]
 
         self.is_trainer = is_trainer
@@ -57,6 +72,7 @@ class BattleClient:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
         self.connected = True
+        self.logs = []
 
         # Add debugging print to notify that a connection was established
         print(f"Established connection with battle simulation server ({host}:{port})")
@@ -81,11 +97,21 @@ class BattleClient:
         # Attach a listener that makes the AI use a move each turn
         self.on(BattleEvent.TURN_CHANGE, self.ai_use_move)
 
+    # Define an internal log method
+    def __log(self, message: str):
+        # Append to internal logs
+        self.logs.append(message)
+        # Call the log event
+        self.__call_event(BattleEvent.LOG, message)
+
     # Define the listener callback for the socket
     def __listen(self):
         buffer = ""
         while True:
-            data = self.socket.recv(4096)
+            try:
+                data = self.socket.recv(4096)
+            except ConnectionAbortedError: # Socket has been closed
+                break # Break out of the loop
             if not data:
                 break
             buffer += data.decode('utf-8')
@@ -108,7 +134,7 @@ class BattleClient:
                     # Check if this is a 'create' action
                     if obj["action"] == "create" and "battle_id" in obj:
                         self.battle_id = obj["battle_id"]
-                        print(f"Loaded battle: {self.battle_id}")
+                        self.__log(f"Loaded battle: {self.battle_id}")
                         # Call STARTED event
                         self.__call_event(BattleEvent.STARTED)
                         # Send out starting Pokemon
@@ -118,6 +144,7 @@ class BattleClient:
                         )
                     elif obj["action"] == "message" and "output" in obj: # Check if this is a 'message' action
                         message = obj["output"]
+                        self.__log(f"< {message}")
 
                         # Check if message contains any pipe deliminators
                         if "|" in message:
@@ -138,8 +165,8 @@ class BattleClient:
                                 self.__call_event(
                                     BattleEvent.MOVE,
                                     user, move, target,
-                                    True if "|[miss]|" in message else False,
-                                    True if "|[still]|" in message else False,
+                                    True if "[miss]" in message else False,
+                                    True if "[still]" in message else False,
                                 )
                             elif action == "-boost" or action == "-unboost":
                                 # Split arguments
@@ -164,11 +191,6 @@ class BattleClient:
                             elif action == "switch":
                                 # Split arguments
                                 side = args[2].split(":")[0][1:-1] # Slice a string, ex: abcde -> bcd
-                                # Iterate battlers
-                                for battler in Battler:
-                                    if battler.value == side:
-                                        side = battler
-                                        break
                                 target = self.get_pokemon_by_uuid(args[2])
 
                                 # Check battler and assign current Pokemon
@@ -191,7 +213,7 @@ class BattleClient:
                                 # Check if max health matches the Pokemon's health stat
                                 # This is because HP is sent in two formats, current/max and
                                 # current hp percent / 100
-                                if max_health == target.get_stat(Stat.HP):
+                                if max_health == target.get_max_health():
                                     # Determine targeted battler
                                     if target == self.current:
                                         battler = Battler.PLAYER
@@ -199,12 +221,93 @@ class BattleClient:
                                         battler = Battler.AI
                                     # Call a health update event
                                     self.__call_event(BattleEvent.HEALTH_UPDATE, battler, health)
-                    else:
-                        # Print raw message in edge-cases
-                        print(obj)
+                            elif action == "-damage" and "fnt" not in message:
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Split arguments to determine health
+                                raw_health = args[3].split("/")
+                                # Clean out the status condition
+                                if " " in raw_health[1]:
+                                    raw_health[1] = raw_health[1].split(" ")[0]
+                                health = int(raw_health[0])
+                                max_health = int(raw_health[1])
 
+                                # Check if max health matches the Pokemon's health stat
+                                # This is because HP is sent in two formats, current/max and
+                                # current hp percent / 100
+                                if max_health == target.get_max_health():
+                                    # Determine targeted battler
+                                    if target == self.current:
+                                        battler = Battler.PLAYER
+                                        # Update battle condition
+                                        self.current.condition.health = health
+                                    else:
+                                        battler = Battler.AI
+                                        # Update battle condition
+                                        self.current_opponent.condition.health = health
+                                    # Call a health update event
+                                    self.__call_event(BattleEvent.HEALTH_UPDATE, battler, health)
+                            elif action == "pp_update":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                raw_move_pps = args[3]
+                                raw_pps = raw_move_pps.split(", ")
+                                # Initialize PP dictionary
+                                pp = {}
+                                # Iterate each move
+                                for data in raw_pps:
+                                    # Split arguments
+                                    move_name = data.split(": ")[0]
+                                    # Iterate target's move set
+                                    for move in target.get_moves():
+                                        # Check if move_name matches this move loosely
+                                        if move.replace("_", "").lower() == move_name.lower():
+                                            # Move's match
+                                            move_name = move
+                                    pp_count = int(data.split(": ")[1])
+                                    # Add pair to PP dictionary
+                                    pp[move_name] = pp_count
+                                # Call the PP update event
+                                self.__call_event(BattleEvent.PP_UPDATE, target, pp)
+                            elif action == "-crit":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Call the event
+                                self.__call_event(BattleEvent.CRITICAL_HIT, target)
+                            elif action == "-supereffective":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Call the event
+                                self.__call_event(BattleEvent.SUPER_EFFECTIVE, target)
+                            elif action == "-resisted":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Call the event
+                                self.__call_event(BattleEvent.RESISTED, target)
+                            elif action == "-immune":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Call the event
+                                self.__call_event(BattleEvent.IMMUNE, target)
+                            elif action == "faint":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Set Pokemon's health to 0
+                                target.condition.health = 0
+                                # Call the faint event
+                                self.__call_event(BattleEvent.FAINTED, target)
+                            elif action == "win":
+                                # Split arguments
+                                winner = args[2]
+                                # Check if winner is 'player'
+                                if winner == "player":
+                                    won = True
+                                else:
+                                    won = False
+                                # Call the event
+                                self.__call_event(BattleEvent.END, won)
                 except json.JSONDecodeError as e:
-                    print("Failed to decode JSON:", e)
+                    self.__log(f"Failed to decode JSON: {e}")
 
     # Define the start listening function to attach the listen function
     def start_listening(self):
@@ -225,7 +328,7 @@ class BattleClient:
             self.socket.send(request_json.encode())
         except Exception as e: # Catch any errors
             # Notify that an error occurred
-            print("An error occurred in the battle simulator connection")
+            self.__log("An error occurred in the battle simulator connection")
             # Close the connection
             self.disconnect()
             raise
@@ -245,7 +348,7 @@ class BattleClient:
             self.socket.send(request_json.encode())
         except Exception as e: # Catch any errors
             # Notify that an error occurred
-            print("An error occurred in the battle simulator connection")
+            self.__log("An error occurred in the battle simulator connection")
             # Close the connection
             self.disconnect()
             raise e
@@ -253,10 +356,15 @@ class BattleClient:
     # Define the send request private method to send a request to
     # the battle simulation server using the battle id
     def __send_command(self, command: str):
-        # Log the sent command
-        print(command)
+        # Log the command that was sent
+        self.__log(command)
         # Delegate to the send request function
         self.__send_identified_request({"action": "command", "command": command})
+
+    # A public method to send commands
+    def send_command_unsafe(self, command: str):
+        # Delegate to private method
+        self.__send_command(command)
 
     # Define a function to call an event
     def __call_event(self, event: BattleEvent, *args, **kwargs) -> Any:
@@ -316,7 +424,6 @@ class BattleClient:
     # Define a function to send off the constructed teams
     def send_teams(self):
         # Construct teams
-
         player_team = {
             "name": "player",
             "team": "]".join(self.pack_team(self.player)),
@@ -366,8 +473,8 @@ class BattleClient:
         # https://bulbapedia.bulbagarden.net/wiki/Catch_rate
 
         # Define variables for the formula
-        max_health = self.current_opponent.get_stat(Stat.HP)
-        current_health = self.current_opponent.condition.health
+        max_health = self.current_opponent.get_max_health()
+        current_health = self.current_opponent.get_health()
         catch_rate = self.current_opponent.get_species().catch_rate
         ball_bonus = ball.value.handler(CatchContext(
             self.current,
@@ -422,6 +529,11 @@ class BattleClient:
     def ai_use_move(self, _: int):
         # TODO Implement logical move choice
         self.select_move(Battler.AI, 1)
+
+    # Define a function to switch current Pokemon
+    def switch(self, battler: Battler, pokemon: Pokemon):
+        # Send the command
+        self.__send_command(f">p{battler.value} switch {pokemon.uuid}")
 
     # Define a function to disconnect the socket
     def disconnect(self):

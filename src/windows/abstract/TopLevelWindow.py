@@ -34,8 +34,6 @@ class TopLevelWindow:
     def wait(self) -> TopLevelWindow:
         # Force this window to be on top of parent window
         self.window.transient(self.parent)
-        # Disables all other windows
-        self.window.grab_set()
         # Force the window to be focused
         self.window.focus_force()
         # Starts a local loop and does not exist until this

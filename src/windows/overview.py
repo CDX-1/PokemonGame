@@ -115,6 +115,11 @@ class Overview(TopLevelWindow):
             stat_value = tk.Label(stats_frame, text=pkm.get_stat(stat), anchor=tk.W)
             stat_value.grid(row=7 + i, column=1, sticky=tk.W, padx=(0, 20))
 
+            # Check if the current stat is HP
+            if stat == Stat.HP:
+                # Update stat value label to be current hp / max hp
+                stat_value.config(text=f"{pkm.get_health()}/{stat_value.cget('text')}")
+
             # Create a IV prefix label
             iv_prefix = tk.Label(stats_frame, text=f"{stat.format()}:", anchor=tk.W)
             iv_prefix.grid(row=7 + i, column=2, sticky=tk.W)
@@ -138,7 +143,7 @@ class Overview(TopLevelWindow):
         ability_prefix.grid(row=0, column=0)
 
         # Add an ability label
-        ability_label = tk.Label(ability_frame, text=pkm.ability.title(), anchor=tk.W)
+        ability_label = tk.Label(ability_frame, text=" ".join(pkm.ability.split("_ ")).title(), anchor=tk.W)
         ability_label.grid(row=0, column=1)
 
         # Create a nature frame
