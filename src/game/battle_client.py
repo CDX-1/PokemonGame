@@ -41,6 +41,23 @@ class BattleEvent(Enum):
     RESISTED = "resisted" # A move was resisted
     IMMUNE = "immune" # A move did no damage
     FAINTED = "fainted" # A Pokemon has fainted
+    FAILED = "failed" # A move has failed TODO
+    BLOCKED = "blocked" # A move has been blocked TODO
+    HEAL = "heal" # A Pokemon has had itş health restored TODO
+    STATUS_INFLICTED = "status_inflicted" # A Pokemon was inflicted with a status condition TODO
+    STATUS_CURED = "status_cured" # A Pokemon has had its status condition cured TODO
+    TEAM_STATUS_CURED = "team_status_cured" # The entire team had their status conditions cured TODO
+    STAT_SWAPPED = "stat_swapped" # The stat changes were swapped between a target and another Pokemon TODO
+    STAT_CHANGES_INVERTED = "stat_changes_inverted" # The stat changes of the Pokemon were inverted TODO
+    STAT_CHANGES_CLEARED = "stat_changes_cleared" # All the stat changes have been cleared TODO
+    ALL_STAT_CHANGES_CLEARED = "all_stat_changes_cleared" # All stat changes of all Pokemon on both sides have been cleared TODO
+    CLEAR_POSITIVE_STAT_CHANGES = "clear_positive_stat_changes" # All positive stat changes were cleared from target TODO
+    CLEAR_NEGATIVE_STAT_CHANGES = "clear_negative_stat_changes" # All negative stat changes were cleared from target TODO
+    COPY_STAT_CHANGES = "copy_stat_changes" # All stat changes were copied by target TODO
+    WEATHER = "weather" # The weather has changed # TODO
+    WEATHER_UPKEEP = "weather_upkeep" # The weather from the last turn has persisted TODO
+    FIELD_START = "field_start" # A condition has been added to the field TODO
+    FIELD_END = "field_end" # A condition on the field has ended TODO
     END = "end" # The battle has ended
 
     LOG = "log" # A message was sent or received
