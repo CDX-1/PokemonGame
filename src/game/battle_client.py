@@ -777,8 +777,38 @@ class BattleClient:
 
     # Define a function to make the AI use a move
     def ai_use_move(self, _: int):
-        # TODO Implement logical move choice
-        self.select_move(Battler.AI, 1)
+        # Initialize a move map
+        moves = {}
+        # Iterate each of the AI's moves
+        for move in self.current_opponent.condition.move_set:
+            # If we don't have enough PP then skip
+            if move.pp <= 0:
+                continue
+
+            # Obtain the move object
+            move_obj = holder.get_move(move.name)
+
+            # Calculate the STAB (Same-Type-Attack-Bonus) modifier
+            stab_bonus = (1.5 if move_obj.type in self.current_opponent.get_species().types else 1)
+            # Determine the power of the move
+            power = move_obj.power if move_obj.power is not None else 0
+            # Calculate the effective power of this move and place it in the map
+            moves[move.name] = power * stab_bonus
+        # Chance of 30%
+        if random.random() <= 0.3:
+            # Shuffle the moves map for some randomness
+            items = list(moves.items())
+            random.shuffle(items)
+            moves = dict(items)
+        else: # Otherwise
+            # Sort the moves by highest power
+            moves = dict(sorted(moves.items(), key=lambda item: int(item[1]), reverse=True))
+        # Get first move
+        selected_move, _ = next(iter(moves.items()))
+        # Get the index of the selected move in the Pokemon's move set
+        move_index = self.current_opponent.get_moves().index(selected_move)
+        # Select the move
+        self.select_move(Battler.AI, move_index + 1)
 
     # Define a function to switch current Pokemon
     def switch(self, battler: Battler, pokemon: Pokemon):
