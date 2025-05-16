@@ -6,7 +6,7 @@
 import tkinter as tk
 
 from src.pokemon.pokemon import Pokemon
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 
 # Define the 'Nicknamer' class
 # The structure of this Top Level Window class differs from that of others

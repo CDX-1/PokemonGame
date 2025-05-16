@@ -9,12 +9,13 @@ from tkinter import messagebox, scrolledtext
 import os
 import platform
 import subprocess
+from typing import Callable
 
 import src.resources as resources
 from src import holder
 from src.game.battle_client import BattleEvent, BattleClient
 from src.utils.font import get_bold_font
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 
 # A utility function to open folders
 def open_folder(path: str):
@@ -60,10 +61,39 @@ def about():
     # Start window loop
     window.mainloop()
 
+# Game instructions callback
+def instructions():
+    # Create a top level window
+    window = TopLevelWindow.create_basic_window("About", width=300, height=400)
+    # Create a centered container frame
+    frame = tk.Frame(window)
+    frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+    # Add header text to frame
+    header = tk.Label(frame, text="Instructions", font=get_bold_font())
+    header.pack()
+    # Iterate all texts
+    for text in [
+        "Z lets you encounter a wild Pokemon",
+        "X lets you open your bag of items",
+        "C lets you open your box of Pokemon",
+        "V lets you open the shop",
+        "",
+        "After every battle you win, there's a 10% chance that you proceed to the next route",
+        "There are 24 routes",
+        "",
+        "You can heal your Pokemon in the shop",
+        "Clicking on your Pokemon in the navigator home menu lets you see their stats and change their moves"
+    ]:
+        # Create a label
+        label = tk.Label(frame, text=text, wraplength=250, anchor=tk.CENTER, justify=tk.CENTER)
+        label.pack()
+    # Start window loop
+    window.mainloop()
+
 # Config game callback
 def config():
     # Create a top level window
-    window = TopLevelWindow.create_basic_window("Config", width=200, height=150)
+    window = TopLevelWindow.create_basic_window("Config", width=200, height=300)
     # Create a centered container frame
     frame = tk.Frame(window)
     frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
@@ -71,43 +101,69 @@ def config():
     header = tk.Label(frame, text="Configure", font=get_bold_font())
     header.pack()
 
-    # Add configurator for shiny odds
-    config_shiny_prefix = tk.Label(frame, text="Shiny Odds")
-    config_shiny_prefix.pack()
+    # Initialize a list of updaters
+    updaters = []
 
-    # Create variable for shiny odds
-    shiny_odds_var = tk.StringVar(value=resources.SHINY_ODDS)
+    # Define a function that will make a prefix label and an entry widget for a specific field
+    def create_field(display: str, default: int | float, on_update: Callable[[str], None]):
+        # Create a prefix label
+        prefix = tk.Label(frame, text=display)
+        prefix.pack()
+        # Create a variable
+        var = tk.StringVar(value=str(default))
+        # Create an entry widget
+        entry = tk.Entry(frame, textvariable=var)
+        entry.pack()
+        # Append the on update callback to the list of updates tupled with the string variable
+        updaters.append((var, on_update))
 
-    # Add entry widget for shiny odds
-    config_shiny_entry = tk.Entry(frame, textvariable=shiny_odds_var)
-    config_shiny_entry.pack()
+    # Create a callback to update shiny odds
+    def update_shiny_odds(num):
+        resources.SHINY_ODDS = num
+    # Create a field
+    create_field("Shiny Odds", resources.SHINY_ODDS, update_shiny_odds)
 
-    # Add configurator for hidden ability odds
-    config_hidden_ability_prefix = tk.Label(frame, text="Hidden Ability Odds")
-    config_hidden_ability_prefix.pack()
+    # Create a callback to update hidden ability odds
+    def update_hidden_ability_odds(num):
+        resources.HIDDEN_ABILITY_ODDS = num
+    # Create a field
+    create_field("Hidden Ability Odds", resources.HIDDEN_ABILITY_ODDS, update_hidden_ability_odds)
 
-    # Create variable for hidden ability odds
-    hidden_ability_odds_var = tk.StringVar(value=resources.HIDDEN_ABILITY_ODDS)
+    # Create a callback to update the EXP multiplier
+    def update_exp_multiplier(num):
+        holder.exp_mod = num
+    # Create a field
+    create_field("Experience Multiplier", holder.exp_mod, update_exp_multiplier)
 
-    # Add entry widget for hidden ability odds
-    config_hidden_ability_entry = tk.Entry(frame, textvariable=hidden_ability_odds_var)
-    config_hidden_ability_entry.pack()
+    # Create a callback to update the yen multiplier
+    def update_yen_multiplier(num):
+        holder.yen_mod = num
+    # Create a field
+    create_field("Yen Multiplier", holder.yen_mod, update_yen_multiplier)
+
+    # Create a callback to update the catch rate multiplier
+    def update_catch_rate_multiplier(num):
+        holder.catch_rate_mod = num
+    # Create a field
+    create_field("Catch Rate Multiplier", holder.catch_rate_mod, update_catch_rate_multiplier)
 
     # Create callback function for update button
     def update():
-        # Ensure shiny odds and hidden ability odds are valid doubles
+        # Ensure all variables are valid doubles
         try:
-            float(config_shiny_entry.get())
-            float(config_hidden_ability_entry.get())
+            # Iterate the variable-updater pairs
+            for variable, updater in updaters:
+                # Check if the variable's value is a valid float
+                float(variable.get())
         except ValueError:
             # Inform user of invalid entries
             messagebox.showerror("Invalid Entry", "You must ensure that inputs are valid")
-            # Exit callback
-            return
+            return # Exit
 
-        # Update values
-        resources.SHINY_ODDS = float(shiny_odds_var.get())
-        resources.HIDDEN_ABILITY_ODDS = float(hidden_ability_odds_var.get())
+        # Iterate the variable-updater pairs
+        for variable, updater in updaters:
+            # Call the updater using the cast variable
+            updater(float(variable.get()))
 
         # Destroy top level window
         window.destroy()
@@ -202,6 +258,8 @@ def setup_menubar(parent: tk.Tk):
     menubar.add_cascade(label="Game", menu=game_tab)
     # Add about button
     game_tab.add_command(label="About", command=about)
+    # Add instructions button
+    game_tab.add_command(label="Instructions", command=instructions)
     # Add open saves, open packs, and open assets buttons
     game_tab.add_command(label="Open Saves Folder", command=open_saves_folder)
     game_tab.add_command(label="Open Packs Folder", command=open_packs_folder)

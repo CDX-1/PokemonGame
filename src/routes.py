@@ -181,7 +181,7 @@ routes = [
     },
     {
         "common": [
-            {"species": "ditto", "min_level": 27, "max_level": 32},
+            # {"species": "ditto", "min_level": 27, "max_level": 32}, TODO Omitted because of complicated nature
             {"species": "pidgeotto", "min_level": 27, "max_level": 32},
             {"species": "fearow", "min_level": 27, "max_level": 32},
             {"species": "exeggcute", "min_level": 27, "max_level": 32}

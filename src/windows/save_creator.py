@@ -17,7 +17,7 @@ from src.pokemon.types.ball import Ball
 from src.pokemon.types.capture_data import CaptureData
 from src.utils import images
 from src.utils.font import get_font, get_bold_font
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 from src.windows.nicknamer import Nicknamer
 
 # Create a list that declares the list of starter species

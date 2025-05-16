@@ -27,6 +27,11 @@ save: Save | None = None
 # battle that the player is in
 battle: BattleClient | None = None
 
+# Initialize an exp, yen, and a catch rate modifier
+exp_mod = 1
+yen_mod = 1
+catch_rate_mod = 1
+
 # Define the 'get_species' function that takes a species name and returns
 # a species object
 def get_species(species_name: str) -> Species:

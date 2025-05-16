@@ -3,6 +3,7 @@
 
 # Imports
 
+from tkinter import messagebox
 from typing import Literal, cast
 import uuid
 
@@ -10,7 +11,7 @@ from src import holder
 from src.pokemon.species import Species
 from src.pokemon.types.ball import Ball
 
-from src.pokemon.types.battle_condition import BattleCondition
+from src.pokemon.types.battle_condition import BattleCondition, BattleMove
 from src.pokemon.types.capture_data import CaptureData
 from src.pokemon.types.gender import Gender
 from src.pokemon.types.nature import Nature
@@ -195,6 +196,34 @@ class Pokemon:
 
         # Loop until there's no more EXP to give
         while amount > 0:
+            # Define a function to check for new moves
+            def check_for_moves():
+                # Check if the Pokemon can learn any new moves after leveling up
+                for move in self.get_species().moves:
+                    # Get the clean move name
+                    move_name = move["name"].replace('_', ' ').title()
+                    # Retrieve the move object for this move
+                    move_obj = holder.get_move(move["name"])
+                    # Check if the move is learnt at the current level
+                    if move["level"] == self.level and move["name"] not in self.get_moves():
+                        # Check if the Pokemon has 4 moves
+                        if len(self.get_moves()) >= 4:
+                            # Inform the user
+                            messagebox.showinfo("New Move", f"{self.nickname} has learnt {move_name}! " + \
+                                                "You can swap out a move for this one in the Pokemon summary.")
+                        else:
+                            # Automatically add the move to this Pokemon
+                            self.condition.move_set.append(
+                                BattleMove(
+                                    move['name'],
+                                    move_obj.pp,
+                                    move_obj.pp,
+                                    False
+                                )
+                            )
+                            # Inform the user
+                            messagebox.showinfo("New Move", f"{self.nickname} has learnt {move_name}!")
+
             exp = self.experience
             # Calculate the EXP needed to level up
             exp_needed = self.get_level_up_experience() - exp
@@ -205,6 +234,7 @@ class Pokemon:
                 # Increase the Pokemon's level
                 self.level += 1
                 has_leveled_up = True
+                check_for_moves()
                 # Check if the Pokemon is now at the max level
                 if self.level >= MAX_LEVEL:
                     break # Break out of the loop
@@ -222,7 +252,7 @@ class Pokemon:
                     if self.level >= level:
                         # Create an evolution window
                         should_continue = EvolutionWindow(holder.root, self, holder.get_species(evo["name"])).draw()
-                        # Check if should continue is not none indicating that the player has confirmed the evolution
+                        # Check if we should continue is not none indicating that the player has confirmed the evolution
                         if should_continue is not None:
                             should_continue.wait() # Show the window
                             break # Break out of the loop

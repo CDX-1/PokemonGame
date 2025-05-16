@@ -184,12 +184,13 @@ class Navigator:
 
         # Define the box callback
         def box(event):
-            print("box")
+            # Show a message
+            messagebox.showerror("Not Implemented", "I couldn't finish the Pokemon box before the due date :(")
 
         # Define the shop callback
         def shop(event):
             # Create an instance of the shop window and show it
-            ShopWindow(self.parent).draw().wait()
+            ShopWindow(self.parent, self.draw).draw().wait()
 
         # Create the encounter button
         encounter_button = tk.Label(self.frame, image=images.get_image("encounter", scale))

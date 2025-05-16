@@ -13,7 +13,6 @@ from src.pokemon.types.move_target import MoveTarget
 from src.pokemon.types.stat_table import BattleStatTable
 
 # Define the 'Move' class
-
 class Move:
     def __init__(
             self,

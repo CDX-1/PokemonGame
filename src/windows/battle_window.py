@@ -6,10 +6,12 @@
 import tkinter as tk
 from tkinter import messagebox
 from typing import Callable
+import random
 import math
 import time
 
 from src import holder
+from src.routes import routes
 from src.game.battle_client import BattleClient, BattleEvent, Battler
 from src.pokemon.pokemon import Pokemon
 from src.pokemon.types.ball import Ball
@@ -17,7 +19,7 @@ from src.pokemon.types.capture_data import CaptureData
 from src.pokemon.types.stat import Stat
 from src.utils import images
 from src.utils.font import get_bold_font, get_mono_font
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 from src.windows.item_selector import ItemSelector
 from src.windows.move_selector import MoveSelector
 from src.windows.nicknamer import Nicknamer
@@ -463,27 +465,7 @@ class BattleWindow(TopLevelWindow):
             keyword = "decreased"
 
         # Log the event
-        self.log(f"{pokemon.nickname}'s {stat} has {keyword} by {amount} stages")
-
-    # Define a critical hit event callback
-    def on_critical_hit(self, pokemon: Pokemon):
-        # Log the event
-        self.log("A critical hit!")
-
-    # Define a super effective move event callback
-    def on_super_effective(self, pokemon: Pokemon):
-        # Log the event
-        self.log(f"It's super effective!")
-
-    # Define a critical hit event callback
-    def on_resisted(self, pokemon: Pokemon):
-        # Log the event
-        self.log(f"It's not very effective...")
-
-    # Define a super effective move event callback
-    def on_immune(self, pokemon: Pokemon):
-        # Log the event
-        self.log(f"It doesn't affect {pokemon.nickname}...")
+        self.log(f"{pokemon.nickname}'s {stat} has {keyword} by {abs(amount)} stages")
 
     # Define a faint event callback
     def on_faint(self, pokemon: Pokemon):
@@ -494,6 +476,31 @@ class BattleWindow(TopLevelWindow):
         if not pokemon in self.battle.player:
             # Update opponent health bar
             self.update_health_bar(self.current_opponent_health_bar, 0, self.battle.current_opponent.get_max_health())
+
+            # Define the attacker and target
+            attacker: Pokemon = self.battle.current
+            target: Pokemon = self.battle.current_opponent
+
+            # Check if sum of attacker's EVs exceed 508 (max)
+            total = 0
+            for stat, evs in attacker.evs.items():
+                total += evs
+            if total >= 508:
+                return # Exit, this Pokemon cannot gather more EVs
+
+            # Determine EV yield of the Pokemon
+            ev_yield = target.get_species().ev_yield.items()
+            # Determine which EV to reward
+            ev_name, evs = random.choice(list(ev_yield))
+
+            # Check if the Pokemon has 252 EVs of this type already (max)
+            if ev_name in attacker.evs:
+                if attacker.evs[ev_name] >= 252:
+                    return # Exit, this Pokemon cannot gather more of this type of EV
+
+            # Increase EV count by 'evs' with a max of 252
+            attacker.evs[ev_name] = min(252, attacker.evs[ev_name] + evs)
+
             return # Exit
         else:
             # Update player health bar
@@ -529,10 +536,17 @@ class BattleWindow(TopLevelWindow):
             s = 1
             # Calculate the amount of experience to reward
             exp = math.floor(((a * b * l) / 5) * t * e * (1 / s))
-            # Add exp to the Pokemon
+            # Apply the EXP modifier
+            exp *= holder.exp_mod
+            # Add EXP to the Pokemon
             has_leveled_up = self.battle.current.add_exp(exp)
+            # Share EXP between player's team
+            for pokemon in holder.save.team:
+                pokemon.add_exp(exp * 0.5) # Share half of the rewarded EXP with the team
             # Calculate the amount of yen to reward
             yen = int(10000 * ((b * l ** 1.3) / (608 * 100 ** 1.3)) ** 0.8)
+            # Apply the yen modifier
+            yen *= holder.yen_mod
             # Add the yen
             holder.save.yen += yen
             # Log events
@@ -554,12 +568,27 @@ class BattleWindow(TopLevelWindow):
         # Destroy the window after a delay
         self.window.after(5000, self.destroy)
 
+        # Chance of 10% and current route is not the max
+        if random.random() >= 0.9 and holder.save.route != len(routes):
+            # Prompt user to move to the next route
+            confirmed = messagebox.askyesno("Next Route", "Would you like to go to route " +\
+                                            f"{holder.save.route} -> {holder.save.route + 1}?")
+            # Check if the user clicked yes
+            if confirmed:
+                # Increment the save's route counter
+                holder.save.route += 1
+                # Show dialogue box
+                messagebox.showinfo("Next Route", f"You are now on route {holder.save.route}!")
+
     # Define a move event callback
     def on_move(self, user: Pokemon, move: str, target: Pokemon, miss: bool, still: bool):
         # Log events
-        self.log(f"{user.nickname} used {move} on {target.nickname}")
+        if target is not None:
+            self.log(f"{user.nickname} used {move} on {target.nickname}")
+        else:
+            self.log(f"{user.nickname} used {move}")
         if miss:
-            self.log(f"{self.battle.current_opponent.nickname} missed!")
+            self.log(f"{user.nickname} missed!")
 
     # Define the 'draw' method that returns an instance of its self so that the
     # 'factory' API architecture can be used (method-chaining)
@@ -604,7 +633,7 @@ class BattleWindow(TopLevelWindow):
         action_frame.grid_columnconfigure(1, weight=1)
 
         # Create a label that will overlay the battle action frame to show messages
-        self.log_label = tk.Label(action_frame, text="", font=get_mono_font(12), wraplength=380,
+        self.log_label = tk.Label(action_frame, text="", font=get_mono_font(12), wraplength=370,
                                   anchor=tk.NW, justify=tk.LEFT, bg="#f0f0f0")
 
         # Attach listener callbacks
@@ -616,10 +645,45 @@ class BattleWindow(TopLevelWindow):
         self.battle.on(BattleEvent.TURN_CHANGE, self.on_turn_change)
         self.battle.on(BattleEvent.PP_UPDATE, self.on_pp_update)
         self.battle.on(BattleEvent.STAT_CHANGE, self.on_stat_change)
-        self.battle.on(BattleEvent.CRITICAL_HIT, self.on_critical_hit)
-        self.battle.on(BattleEvent.SUPER_EFFECTIVE, self.on_super_effective)
-        self.battle.on(BattleEvent.RESISTED, self.on_resisted)
-        self.battle.on(BattleEvent.IMMUNE, self.on_immune)
+
+        self.battle.on(BattleEvent.CRITICAL_HIT, lambda pokemon: self.log("A critical hit!"))
+        self.battle.on(BattleEvent.SUPER_EFFECTIVE, lambda pokemon: self.log("It's super effective!"))
+        self.battle.on(BattleEvent.RESISTED, lambda pokemon: self.log("It's not very effective..."))
+        self.battle.on(BattleEvent.IMMUNE, lambda pokemon: self.log(f"It doesn't affect {pokemon.nickname}..."))
+
+        self.battle.on(BattleEvent.FAILED, lambda pokemon, action: self.log("It failed!"))
+        self.battle.on(BattleEvent.BLOCKED, lambda pokemon, effect, move, attacker: self.log(f"{pokemon.nickname} blocked it!"))
+        self.battle.on(BattleEvent.HEAL, lambda pokemon: self.log(f"{pokemon.nickname} had its HP restored!"))
+        self.battle.on(BattleEvent.STATUS_INFLICTED, lambda pokemon, status: self.log(f"{pokemon.nickname} {status}!"))
+        # SKIPPING STATUS CURED TODO
+        self.battle.on(BattleEvent.TEAM_STATUS_CURED, lambda user: self.log(f"The team was cured of its status conditions!"))
+        self.battle.on(BattleEvent.STAT_SWAPPED, lambda user, target, stats: self.log(f"{user.nickname}'s stats were swapped with {target.nickname}'s!"))
+        self.battle.on(BattleEvent.STAT_CHANGES_INVERTED, lambda target: self.log(f"{target.nickname}'s stat changes have been inverted!"))
+        self.battle.on(BattleEvent.STAT_CHANGES_CLEARED, lambda target: self.log(f"{target.nickname}'s stat changes have been cleared!"))
+        self.battle.on(BattleEvent.ALL_STAT_CHANGES_CLEARED, lambda: self.log("All stat changes have been cleared!"))
+        self.battle.on(BattleEvent.CLEAR_POSITIVE_STAT_CHANGES, lambda target, user, effect: self.log(f"{target.nickname}'s positive stat changes have been cleared!"))
+        self.battle.on(BattleEvent.CLEAR_NEGATIVE_STAT_CHANGES, lambda target: self.log(f"{target.nickname}'s negative stat changes have been cleared!"))
+        self.battle.on(BattleEvent.COPY_STAT_CHANGES, lambda user, target: self.log(f"{user.nickname} copied {target.nickname}'s stat changes!"))
+        # SKIPPING WEATHER TODO
+        self.battle.on(BattleEvent.FIELD_START, lambda condition: self.log(f"The field was affected by {condition}!"))
+        self.battle.on(BattleEvent.FIELD_END, lambda condition: self.log(f"The {condition} on the field has ended!"))
+        self.battle.on(BattleEvent.SIDE_START, lambda side, condition: self.log(f"Side {side} was affected by {condition}!"))
+        self.battle.on(BattleEvent.SIDE_END, lambda side, condition: self.log(f"The {condition} on Side {side} has ended!"))
+        self.battle.on(BattleEvent.SWAP_SIDE_CONDITIONS, lambda: self.log(f"The conditions on each side have been swapped!"))
+        self.battle.on(BattleEvent.VOLATILE_STATUS_STARTED, lambda pokemon, effect: self.log(f"{pokemon.nickname} has been affected by {effect}!"))
+        self.battle.on(BattleEvent.VOLATILE_STATUS_ENDED, lambda pokemon, effect: self.log(f"The {effect} affecting {pokemon.nickname} has ended!"))
+        self.battle.on(BattleEvent.ABILITY_CHANGED, lambda pokemon, ability, effect: self.log(f"{pokemon.nickname}'s ability changed to {ability}!"))
+        self.battle.on(BattleEvent.ABILITY_ACTIVATED, lambda pokemon, ability: self.log(f"{pokemon.nickname}'s {ability} activated!"))
+        self.battle.on(BattleEvent.ABILITY_ENDED, lambda pokemon: self.log(f"{pokemon.nickname}'s ability was suppressed!"))
+        self.battle.on(BattleEvent.TRANSFORM, lambda pokemon, species: self.log(f"{pokemon.nickname} transformed into {species}!"))
+        self.battle.on(BattleEvent.PREPARE_AGAINST_UNKNOWN, lambda attacker, move: self.log(f"{attacker.nickname} is preparing to use {move}..."))
+        self.battle.on(BattleEvent.PREPARE_AGAINST_KNOWN, lambda attacker, move, defender: self.log(f"{attacker.nickname} is preparing to use {move}..."))
+        self.battle.on(BattleEvent.MUST_RECHARGE, lambda pokemon: self.log(f"{pokemon.nickname} must recharge!"))
+        self.battle.on(BattleEvent.NOTHING, lambda: self.log("It did nothing!"))
+        self.battle.on(BattleEvent.MOVE_MULTI_HIT, lambda pokemon, hits: self.log(f"It hit {hits} times!"))
+        # SKIPPING SINGLE MOVE TODO
+        # SKIPPING SINGLE TURN TODO
+
         self.battle.on(BattleEvent.FAINTED, self.on_faint)
         self.battle.on(BattleEvent.END, self.on_end)
 

@@ -5,18 +5,22 @@
 
 import tkinter as tk
 from tkinter import messagebox
+from typing import Callable
 
 from src import holder
 from src.pokemon.types.ball import Ball
 from src.utils.font import get_bold_font
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 
 # Define the 'ShopWindow' class
 class ShopWindow(TopLevelWindow):
-    # Class constructor method takes a 'parent' element such as the Tkinter root
-    def __init__(self, parent: tk.Wm | tk.Misc):
+    # Class constructor method takes a 'parent' element such as the Tkinter root, and a rerender callback
+    def __init__(self, parent: tk.Wm | tk.Misc, rerender: Callable[[], None]):
         # Call TopLevelWindow's constructor method
         super().__init__(parent)
+
+        # Initialize fields
+        self.rerender = rerender
 
     # Define a function to nicely format numbers in a currency format
     def format(self, num: int):
@@ -39,19 +43,18 @@ class ShopWindow(TopLevelWindow):
         # Define a callback to update the balance
         def update_balance():
             balance.config(text=f"Balance: ¥{self.format(holder.save.yen)}")
-            print(holder.save.yen)
 
         # Create a frame for the shop buttons
         shop_frame = tk.Frame(self.window)
         shop_frame.pack()
 
         # Iterate every ball type and their price
-        for ball, price in [
-            (Ball.POKE_BALL, 200),
-            (Ball.GREAT_BALL, 600),
-            (Ball.ULTRA_BALL, 1200),
-            (Ball.QUICK_BALL, 1000),
-            (Ball.MASTER_BALL, 99999)
+        for ball, price, color in [
+            (Ball.POKE_BALL, 200, "#CC0000"),
+            (Ball.GREAT_BALL, 600, "#2A5DAA"),
+            (Ball.ULTRA_BALL, 1200, "#424242"),
+            (Ball.QUICK_BALL, 1000, "#FFF200"),
+            (Ball.MASTER_BALL, 99999, "#5D3AA8")
         ]:
             # Define a buy callback
             def buy(b_ball: Ball, b_price: int):
@@ -108,7 +111,7 @@ class ShopWindow(TopLevelWindow):
             ball_name = ball.name.replace("_", " ").title()
             # Create a button for the item
             button = tk.Button(shop_frame, text=f"{ball_name} - ¥{self.format(price)}", width=20, padx=10, pady=5, bd=3,
-                               command=lambda b=ball, p=price: buy(b, p))
+                               command=lambda b=ball, p=price: buy(b, p), bg=color)
             button.pack()
 
         # Define a callback to heal the player's team
@@ -124,14 +127,17 @@ class ShopWindow(TopLevelWindow):
             # Show a messagebox
             messagebox.showinfo("Healed Team", "Your team has been healed.")
 
+            # Call the rerender callback
+            self.rerender()
+
         # Add a button to heal the player's team
         heal_button = tk.Button(shop_frame, text="Heal Pokemon", width=20, padx=10, pady=5, bd=3, command=heal_team)
         heal_button.pack()
 
         # Add a button to cancel
-        cancel_button = tk.Button(shop_frame, text="Cancel", width=20, padx=10, pady=5, bd=3,
+        close_button = tk.Button(shop_frame, text="Close", width=20, padx=10, pady=5, bd=3,
                                   command=self.window.destroy)
-        cancel_button.pack()
+        close_button.pack()
 
         # Return an instance of self
         return self

@@ -11,6 +11,7 @@ import threading
 from enum import Enum
 from typing import Any, Callable
 
+from src import holder
 from src.pokemon.pokemon import Pokemon
 from src.pokemon.types.ball import Ball
 from src.pokemon.types.catch_context import CatchContext
@@ -40,23 +41,38 @@ class BattleEvent(Enum):
     RESISTED = "resisted" # A move was resisted
     IMMUNE = "immune" # A move did no damage
     FAINTED = "fainted" # A Pokemon has fainted
-    FAILED = "failed" # A move has failed TODO
-    BLOCKED = "blocked" # A move has been blocked TODO
-    HEAL = "heal" # A Pokemon has had itş health restored TODO
-    STATUS_INFLICTED = "status_inflicted" # A Pokemon was inflicted with a status condition TODO
-    STATUS_CURED = "status_cured" # A Pokemon has had its status condition cured TODO
-    TEAM_STATUS_CURED = "team_status_cured" # The entire team had their status conditions cured TODO
-    STAT_SWAPPED = "stat_swapped" # The stat changes were swapped between a target and another Pokemon TODO
-    STAT_CHANGES_INVERTED = "stat_changes_inverted" # The stat changes of the Pokemon were inverted TODO
-    STAT_CHANGES_CLEARED = "stat_changes_cleared" # All the stat changes have been cleared TODO
-    ALL_STAT_CHANGES_CLEARED = "all_stat_changes_cleared" # All stat changes of all Pokemon on both sides have been cleared TODO
-    CLEAR_POSITIVE_STAT_CHANGES = "clear_positive_stat_changes" # All positive stat changes were cleared from target TODO
-    CLEAR_NEGATIVE_STAT_CHANGES = "clear_negative_stat_changes" # All negative stat changes were cleared from target TODO
-    COPY_STAT_CHANGES = "copy_stat_changes" # All stat changes were copied by target TODO
-    WEATHER = "weather" # The weather has changed # TODO
-    WEATHER_UPKEEP = "weather_upkeep" # The weather from the last turn has persisted TODO
-    FIELD_START = "field_start" # A condition has been added to the field TODO
-    FIELD_END = "field_end" # A condition on the field has ended TODO
+    FAILED = "failed" # A move has failed
+    BLOCKED = "blocked" # A move has been blocked
+    HEAL = "heal" # A Pokemon has had itş health restored
+    STATUS_INFLICTED = "status_inflicted" # A Pokemon was inflicted with a status condition
+    STATUS_CURED = "status_cured" # A Pokemon has had its status condition cured
+    TEAM_STATUS_CURED = "team_status_cured" # The entire team had their status conditions cured
+    STAT_SWAPPED = "stat_swapped" # The stat changes were swapped between a target and another Pokemon
+    STAT_CHANGES_INVERTED = "stat_changes_inverted" # The stat changes of the Pokemon were inverted
+    STAT_CHANGES_CLEARED = "stat_changes_cleared" # All the stat changes have been cleared
+    ALL_STAT_CHANGES_CLEARED = "all_stat_changes_cleared" # All stat changes of all Pokemon on both sides have been cleared
+    CLEAR_POSITIVE_STAT_CHANGES = "clear_positive_stat_changes" # All positive stat changes were cleared from target
+    CLEAR_NEGATIVE_STAT_CHANGES = "clear_negative_stat_changes" # All negative stat changes were cleared from target
+    COPY_STAT_CHANGES = "copy_stat_changes" # All stat changes were copied by target
+    WEATHER = "weather" # The weather has changed
+    FIELD_START = "field_start" # A condition has been added to the field
+    FIELD_END = "field_end" # A condition on the field has ended
+    SIDE_START = "side_start" # A condition has started on one side of the field
+    SIDE_END = "side_end" # A condition has ended on one side of the field
+    SWAP_SIDE_CONDITIONS = "swap_side_conditions" # The side conditions have been swapped
+    VOLATILE_STATUS_STARTED = "volatile_status_started" # A volatile status condition (ex: Taunt) has started
+    VOLATILE_STATUS_ENDED = "volatile_status_ended" # A volatile status condition (ex: Taunt) has ended
+    ABILITY_CHANGED = "ability_changed" # A Pokemon's ability has changed
+    ABILITY_ACTIVATED = "ability_activated" # A Pokemon's ability has been activated
+    ABILITY_ENDED = "ability_ended" # A Pokemon's ability has been suppressed
+    TRANSFORM = "transform" # A Pokemon has transformed into another Pokemon
+    PREPARE_AGAINST_UNKNOWN = "prepare_against_unknown" # A Pokemon is preparing to use a move on an unknown target
+    PREPARE_AGAINST_KNOWN = "prepare_against_known" # A Pokemon is preparing to use a move on a known target
+    NOTHING = "nothing" # A move has done nothing
+    MUST_RECHARGE = "must_recharge" # A Pokemon must recharge after using a move
+    MOVE_MULTI_HIT = "move_multi_hit" # A move has hit its target an X amount of times
+    SINGLE_MOVE = "single_move" # A Pokemon has used a move which has an effect that lasts for the duration of the move
+    SINGLE_TURN = "single_turn" # A Pokemon has used a move which has an effect that lasts for the duration of the turn
     END = "end" # The battle has ended
 
     LOG = "log" # A message was sent or received
@@ -112,6 +128,23 @@ class BattleClient:
 
         # Attach a listener that makes the AI use a move each turn
         self.on(BattleEvent.TURN_CHANGE, self.ai_use_move)
+
+    # Define a helper function to resolve status conditions
+    def resolve_status_condition_message(self, condition):
+        # Define a map
+        conditions = {
+            "brn": "was burned",
+            "par": "was paralyzed",
+            "slp": "fell asleep",
+            "frz": "was frozen",
+            "psn": "was poisoned",
+            "tox": "was badly poisoned"
+        }
+        # Check if condition is in the map
+        if condition in conditions:
+            return conditions[condition]
+        else:
+            return f"was inflicted with {condition}" # Default message
 
     # Define an internal log method
     def __log(self, message: str):
@@ -176,7 +209,7 @@ class BattleClient:
                                 # Split arguments
                                 user = self.get_pokemon_by_uuid(args[2])
                                 move = args[3]
-                                target = self.get_pokemon_by_uuid(args[4])
+                                target = self.get_pokemon_by_uuid(args[4]) if len(args) >= 5 and ": " in args[4] else None
                                 # Call the move event
                                 self.__call_event(
                                     BattleEvent.MOVE,
@@ -322,6 +355,204 @@ class BattleClient:
                                     won = False
                                 # Call the event
                                 self.__call_event(BattleEvent.END, won)
+                            elif action == "-fail":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                action = args[3]
+                                # Call the event
+                                self.__call_event(BattleEvent.FAILED, target, action)
+                            elif action == "-block":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                effect = args[3]
+                                move = args[4]
+                                attacker = self.get_pokemon_by_uuid(args[5])
+                                # Call the event
+                                self.__call_event(BattleEvent.BLOCKED, target, effect, move, attacker)
+                            elif action == "heal":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Split arguments to determine health
+                                raw_health = args[3].split("/")
+                                # Clean out the status condition
+                                if " " in raw_health[1]:
+                                    raw_health[1] = raw_health[1].split(" ")[0]
+                                health = int(raw_health[0])
+                                max_health = int(raw_health[1])
+
+                                # Call the heal event
+                                self.__call_event(BattleEvent.HEAL, target)
+
+                                # Check if max health matches the Pokemon's health stat
+                                # This is because HP is sent in two formats, current/max and
+                                # current hp percent / 100
+                                if max_health == target.get_max_health():
+                                    # Determine targeted battler
+                                    if target == self.current:
+                                        battler = Battler.PLAYER
+                                        # Update battle condition
+                                        self.current.condition.health = health
+                                    else:
+                                        battler = Battler.AI
+                                        # Update battle condition
+                                        self.current_opponent.condition.health = health
+                                    # Call a health update event
+                                    self.__call_event(BattleEvent.HEALTH_UPDATE, battler, health)
+                            elif action == "-status":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                status = self.resolve_status_condition_message(args[3])
+                                # Call the event
+                                self.__call_event(BattleEvent.STATUS_INFLICTED, target, status)
+                            elif action == "-curestatus":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                status = self.resolve_status_condition_message(args[3])
+                                # Call the event
+                                self.__call_event(BattleEvent.STATUS_CURED, target, status)
+                            elif action == "-cureteam":
+                                # Split arguments
+                                user = self.get_pokemon_by_uuid(args[2])
+                                # Call the event
+                                self.__call_event(BattleEvent.TEAM_STATUS_CURED, user)
+                            elif action == "-swapboost":
+                                # Split arguments
+                                user = self.get_pokemon_by_uuid(args[2])
+                                target = self.get_pokemon_by_uuid(args[3])
+                                stats = args[4]
+                                # Call the event
+                                self.__call_event(BattleEvent.STAT_SWAPPED, user, target, stats)
+                            elif action == "-invertboost":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Call the event
+                                self.__call_event(BattleEvent.STAT_CHANGES_INVERTED, target)
+                            elif action == "-clearboost":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Call the event
+                                self.__call_event(BattleEvent.STAT_CHANGES_CLEARED, target)
+                            elif action == "-clearallboost":
+                                # Call the event
+                                self.__call_event(BattleEvent.ALL_STAT_CHANGES_CLEARED)
+                            elif action == "-clearpositiveboost":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                user = self.get_pokemon_by_uuid(args[3])
+                                effect = self.get_pokemon_by_uuid(args[4])
+                                # Call the event
+                                self.__call_event(BattleEvent.CLEAR_POSITIVE_STAT_CHANGES, target, user, effect)
+                            elif action == "-clearnegativeboost":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Call the event
+                                self.__call_event(BattleEvent.CLEAR_NEGATIVE_STAT_CHANGES, target)
+                            elif action == "-copyboost":
+                                # Split arguments
+                                user = self.get_pokemon_by_uuid(args[2])
+                                target = self.get_pokemon_by_uuid(args[3])
+                                # Call the event
+                                self.__call_event(BattleEvent.COPY_STAT_CHANGES, user, target)
+                            elif action == "-weather":
+                                # Split arguments
+                                weather = args[2]
+                                # Call the event
+                                self.__call_event(BattleEvent.WEATHER, weather)
+                            elif action == "-fieldstart":
+                                # Split arguments
+                                condition = args[2]
+                                # Call the event
+                                self.__call_event(BattleEvent.FIELD_START, condition)
+                            elif action == "-fieldend":
+                                # Split arguments
+                                condition = args[2]
+                                # Call the event
+                                self.__call_event(BattleEvent.FIELD_END, condition)
+                            elif action == "-sidestart":
+                                # Split arguments
+                                side = args[2]
+                                condition = args[3]
+                                # Call the event
+                                self.__call_event(BattleEvent.SIDE_START, side, condition)
+                            elif action == "-sideend":
+                                # Split arguments
+                                side = args[2]
+                                condition = args[3]
+                                # Call the event
+                                self.__call_event(BattleEvent.SIDE_END, side, condition)
+                            elif action == "-swapsideconditions":
+                                # Call the event
+                                self.__call_event(BattleEvent.SWAP_SIDE_CONDITIONS)
+                            elif action == "-start":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                effect = args[3]
+                                # Call the event
+                                self.__call_event(BattleEvent.VOLATILE_STATUS_STARTED, target, effect)
+                            elif action == "-end":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                effect = args[3]
+                                # Call the event
+                                self.__call_event(BattleEvent.VOLATILE_STATUS_ENDED, target, effect)
+                            elif action == "-ability" and "[from]" in message:
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                ability = args[3]
+                                effect = args[4].replace("[from]", "")
+                                # Call the event
+                                self.__call_event(BattleEvent.ABILITY_CHANGED, target, ability, effect)
+                            elif action == "-ability" and "[from]" not in message:
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                ability = args[3]
+                                # Call the event
+                                self.__call_event(BattleEvent.ABILITY_ACTIVATED, target, ability)
+                            elif action == "-endability":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                # Call the event
+                                self.__call_event(BattleEvent.ABILITY_ENDED, target)
+                            elif action == "-transform":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                species = args[3]
+                                # Call the event
+                                self.__call_event(BattleEvent.TRANSFORM, target, species)
+                            elif action == "-prepare" and len(args) == 3:
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                move = args[3]
+                                # Call the event
+                                self.__call_event(BattleEvent.PREPARE_AGAINST_UNKNOWN, target, move)
+                            elif action == "-prepare" and len(args) == 4:
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                move = args[3]
+                                defender = args[4]
+                                # Call the event
+                                self.__call_event(BattleEvent.PREPARE_AGAINST_UNKNOWN, target, move, defender)
+                            elif action == "-nothing":
+                                # Call the event
+                                self.__call_event(BattleEvent.NOTHING)
+                            elif action == "-hitcount":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                hits = int(args[3])
+                                # Call the event
+                                self.__call_event(BattleEvent.MOVE_MULTI_HIT, target, hits)
+                            elif action == "-singlemove":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                move = args[3]
+                                # Call the event
+                                self.__call_event(BattleEvent.SINGLE_MOVE, target, move)
+                            elif action == "-singleturn":
+                                # Split arguments
+                                target = self.get_pokemon_by_uuid(args[2])
+                                move = args[3]
+                                # Call the event
+                                self.__call_event(BattleEvent.SINGLE_TURN, target, move)
                 except json.JSONDecodeError as e:
                     self.__log(f"Failed to decode JSON: {e}")
 
@@ -504,6 +735,9 @@ class BattleClient:
         # Calculate formula
         a = (((3 * max_health - 2 * current_health) * catch_rate * ball_bonus * status_bonus * other_modifiers) / (
                     3 * max_health))
+
+        # Apply the catch rate modifier
+        a *= holder.catch_rate_mod
 
         # Initialize variables
         is_success = False

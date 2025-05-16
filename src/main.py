@@ -1,3 +1,14 @@
+# This following few lines is to make this code executable through IDLEs GUI
+# Import os and sys for fixes
+import os
+import sys
+
+# Check if the current working directory is the same as the parent
+# of this file
+if os.path.abspath(os.getcwd()) == os.path.abspath("./"):
+    # Add the parent folder to the path so modules can be imported correctly
+    sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + '/..'))
+
 # This is the main file that is executed when the program is run
 # This file coordinates the showing of different windows and contains
 # the main functions
@@ -39,8 +50,9 @@ def main():
     # Keep looping until the 'packs' folder is no longer empty
     while len(os.listdir("packs")) == 0:
         # Show dialogue to inform user something is happening
-        messagebox.showinfo("Downloading", "We're currently downloading some content! If this is your " + \
-                            "first time using this program, please wait until the main menu loads.")
+        messagebox.showinfo("Downloading", "We're currently downloading some content! If this is your " +\
+                            "first time using this program, please wait until the main menu loads. You " +\
+                            "must click 'OK'")
         # Download data
         download()
 
@@ -111,7 +123,7 @@ def load_sprites(pack: LoadedPack):
 
     # Load type icons
     for pokemon_type in ["normal", "fighting", "flying", "poison", "ground", "rock", "bug", "ghost", "steel", "fire", "water",
-                         "grass", "electric", "psychic", "ice", "dragon", "dark", "flying"]:
+                         "grass", "electric", "psychic", "ice", "dragon", "dark", "fairy"]:
         images.load_image(pokemon_type, f"assets/types/{pokemon_type}.png")
 
 # Define the download function

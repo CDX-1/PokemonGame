@@ -13,7 +13,7 @@ from typing import Callable
 
 from src import holder
 from src.game.save import Save
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 from src.windows.save_creator import SaveCreator
 
 # Define the 'MainMenu' class
@@ -73,10 +73,8 @@ class MainMenu:
         def on_mouse_wheel(event):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
-        # Bind scroll events to the canvas (not bind_all, to limit to canvas)
-        canvas.bind("<MouseWheel>", on_mouse_wheel)  # For Windows and macOS trackpads
-        canvas.bind("<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))  # Up (macOS/Linux)
-        canvas.bind("<Button-5>", lambda e: canvas.yview_scroll(1, "units"))  # Down (macOS/Linux)
+        # Bind scroll events to the canvas
+        canvas.bind("<MouseWheel>", on_mouse_wheel)
 
         # Define a function to load all saves
         def load_saves():

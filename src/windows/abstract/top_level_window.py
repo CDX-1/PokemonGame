@@ -12,7 +12,6 @@ import tkinter as tk
 
 from src.utils import images
 
-
 # Define the 'TopLevelWindow' class
 class TopLevelWindow:
     # Class constructor method takes a 'parent' element such as the Tkinter root

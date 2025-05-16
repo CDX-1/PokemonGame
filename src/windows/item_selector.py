@@ -9,7 +9,7 @@ from typing import Callable
 from src import holder
 from src.utils import images
 from src.utils.font import get_bold_font
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 
 # Define the 'ItemSelector' class
 class ItemSelector(TopLevelWindow):
@@ -75,12 +75,12 @@ class ItemSelector(TopLevelWindow):
             self.window.destroy()
 
         # Add a select button
-        select_button = tk.Button(button_frame, text="SELECT", font=get_bold_font(), width=5, padx=3, pady=3,
+        select_button = tk.Button(button_frame, text="SELECT", font=get_bold_font(), width=10, padx=3, pady=3,
                                   relief=tk.GROOVE, command=on_select)
         select_button.grid(row=0, column=0)
 
         # Add a cancel button
-        cancel_button = tk.Button(button_frame, text="CANCEL", font=get_bold_font(), width=5, padx=3, pady=3,
+        cancel_button = tk.Button(button_frame, text="CANCEL", font=get_bold_font(), width=10, padx=3, pady=3,
                                   relief=tk.GROOVE, command=lambda: self.window.destroy())
         cancel_button.grid(row=0, column=1)
 

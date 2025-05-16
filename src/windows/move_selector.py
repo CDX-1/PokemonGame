@@ -10,7 +10,7 @@ from src import holder
 from src.pokemon.pokemon import Pokemon
 from src.utils import images
 from src.utils.font import get_bold_font
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 from src.resources import type_colors
 
 # Define the 'MoveSelector' class
@@ -46,8 +46,9 @@ class MoveSelector(TopLevelWindow):
             color = type_colors[move.type] if battle_move.pp > 0 else "#6b6b6b"
 
             # Create a frame for the move
-            move_frame = tk.Frame(frame, padx=10, pady=10, bg=color)
+            move_frame = tk.Frame(frame, padx=10, pady=10, bg=color, width=180, height=40)
             move_frame.grid(row=row, column=col, padx=5, pady=5)
+            move_frame.grid_propagate(False)
 
             # Add the type icon of the move
             type_label = tk.Label(move_frame, image=images.get_image(move.type), bg=color)

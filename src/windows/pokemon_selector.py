@@ -9,7 +9,7 @@ from typing import Callable
 from src import holder
 from src.pokemon.pokemon import Pokemon
 from src.utils.font import get_bold_font
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 from src.resources import type_colors
 
 # Define the 'PokemonSelector' class
@@ -29,7 +29,7 @@ class PokemonSelector(TopLevelWindow):
     # 'factory' API architecture can be used (method-chaining)
     def draw(self) -> TopLevelWindow:
         # Create a basic top level window outline
-        self.window = TopLevelWindow.create_basic_window(f"Select a Pokemon", width=550, height=400)
+        self.window = TopLevelWindow.create_basic_window(f"Select a Pokemon", width=700, height=400)
 
         # Create a container frame
         container = tk.Frame(self.window)
@@ -48,8 +48,8 @@ class PokemonSelector(TopLevelWindow):
         # Iterate each Pokemon in the player's team, enumerated
         for i, pokemon in enumerate(save.team):
             # Define variables
-            row = i // 3
-            col = i % 3
+            row = i // 2
+            col = i % 2
             color = type_colors[pokemon.get_species().types[0]]
 
             # Check if Pokemon is conscious
@@ -121,7 +121,7 @@ class PokemonSelector(TopLevelWindow):
         if self.cancellable:
             cancel_button = tk.Button(container, text="CANCEL", padx=10, pady=10, bd=3,
                                       relief=tk.GROOVE, width=73, font=get_bold_font(), command=self.window.destroy)
-            cancel_button.grid(row=2, column=0, columnspan=2)
+            cancel_button.grid(row=len(holder.save.team) // 2, column=0, columnspan=2)
         else:
             # Define an on destroy callback
             def on_destroy():

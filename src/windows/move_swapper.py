@@ -14,7 +14,7 @@ from src.pokemon.pokemon import Pokemon
 from src.pokemon.types.battle_condition import BattleMove
 from src.utils import images
 from src.utils.font import get_bold_font
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 
 # Define the 'MoveSwapper' class
 class MoveSwapper(TopLevelWindow):
@@ -186,11 +186,11 @@ class MoveSwapper(TopLevelWindow):
             confirm_button.grid(row=i, column=6, sticky=tk.W)
 
         # Configure scrolling with mouse wheel
-        def _on_mousewheel(event):
+        def on_mouse_wheel(event):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
         # Bind mousewheel event to the canvas
-        canvas.bind("<MouseWheel>", _on_mousewheel)
+        canvas.bind("<MouseWheel>", on_mouse_wheel)
 
         # Return an instance of self
         return self

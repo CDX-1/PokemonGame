@@ -11,7 +11,7 @@ from src.pokemon.pokemon import Pokemon
 from src.pokemon.types.stat import Stat
 from src.utils import images
 from src.utils.font import get_bold_font
-from src.windows.abstract.TopLevelWindow import TopLevelWindow
+from src.windows.abstract.top_level_window import TopLevelWindow
 from src.windows.move_swapper import MoveSwapper
 
 
@@ -35,7 +35,7 @@ class Overview(TopLevelWindow):
         # Check if window does not exist
         if self.window is None:
             # Create a basic top level window outline
-            self.window = TopLevelWindow.create_basic_window(pkm.nickname, width=600, height=500)
+            self.window = TopLevelWindow.create_basic_window(pkm.nickname, width=600, height=550)
         # Create a container frame
         frame = TopLevelWindow.create_basic_frame(self.window)
 
@@ -143,7 +143,7 @@ class Overview(TopLevelWindow):
         ability_prefix.grid(row=0, column=0)
 
         # Add an ability label
-        ability_label = tk.Label(ability_frame, text=" ".join(pkm.ability.split("_ ")).title(), anchor=tk.W)
+        ability_label = tk.Label(ability_frame, text=pkm.ability.replace("_", " ").title(), anchor=tk.W)
         ability_label.grid(row=0, column=1)
 
         # Create a nature frame
